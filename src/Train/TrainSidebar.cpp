@@ -343,7 +343,7 @@ TrainSidebar::TrainSidebar(Context *context) : GcWindow(context), context(contex
     wbalr = wbal = 0;
     load_msecs = total_msecs = lap_msecs = 0;
     displayWorkoutDistance = displayDistance = displayPower = displayHeartRate =
-    displaySpeed = displayCadence = slope = load = 0;
+    displaySpeed = displayCadence = slope = load = level = 0;
     displayLRBalance = displayLTE = displayRTE = displayLPS = displayRPS = 0;
 
     connect(gui_timer, SIGNAL(timeout()), this, SLOT(guiUpdate()));
@@ -360,7 +360,6 @@ TrainSidebar::TrainSidebar(Context *context) : GcWindow(context), context(contex
 #ifndef Q_OS_MAC
     //toolbarButtons->hide();
 #endif
-
 }
 
 void
@@ -652,6 +651,7 @@ TrainSidebar::configChanged(qint32)
     if (Devices.count()) {
         deviceTree->setCurrentItem(deviceTree->invisibleRootItem()->child(0));
     }
+
     // And select default workout to Ergo
     QModelIndex firstWorkout = sortModel->index(0, 0, QModelIndex());
     workoutTree->setCurrentIndex(firstWorkout);
@@ -681,8 +681,28 @@ TrainSidebar::deviceTreeWidgetSelectionChanged()
     bpmTelemetry = wattsTelemetry = kphTelemetry = rpmTelemetry = -1;
     deviceSelected();
 
+    //Ensure activeDevices is correct
+    activeDevices = devices();
+
     if (status&RT_CONNECTED) Disconnect(); // disconnect first
     if (autoConnect) Connect(); // re-connect
+
+    levelDevice=0;
+    emit enableLevels(false);
+
+    //Find active level supporting device
+    foreach(int dev, activeDevices) {
+        if (Devices[dev].levels)
+        {
+            levelDevice = &Devices[dev];
+            level = levelDevice->levelstart;
+
+            levelDevice->controller->setLevel(level);
+            emit enableLevels(true);
+            emit levelChanged(QString("%1").arg(level));
+            break;
+        }
+    }
 }
 
 int
@@ -750,6 +770,14 @@ TrainSidebar::workoutTreeWidgetSelectionChanged()
         setLabels();
         clearStatusFlags(RT_WORKOUT);
         //ergPlot->setVisible(false);
+    } else if (index == 2) {
+        // level mode
+        context->notifyErgFileSelected(NULL);
+        ergFile=NULL;
+        mode = LEV;
+        setLabels();
+        clearStatusFlags(RT_WORKOUT);
+        //ergPlot->setVisible(false);
     } else {
         // workout mode
         ergFile = new ErgFile(filename, mode, context);
@@ -779,19 +807,25 @@ TrainSidebar::workoutTreeWidgetSelectionChanged()
     }
 
     // set the device to the right mode
+    clearStatusFlags(RT_MODE_SPIN|RT_MODE_LEVEL|RT_MODE_ERGO);
     if (mode == ERG || mode == MRC) {
         setStatusFlags(RT_MODE_ERGO);
-        clearStatusFlags(RT_MODE_SPIN);
 
         // update every active device
         foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_ERGO);
 
-    } else { // SLOPE MODE
-        setStatusFlags(RT_MODE_SPIN);
-        clearStatusFlags(RT_MODE_ERGO);
+    } else if (mode == CRS) { // SLOPE MODE
+        setStatusFlags(RT_MODE_SLOPE);
 
         // update every active device
-        foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_SPIN);
+        foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_SLOPE);
+
+    } else if (mode == LEV ) {
+        setStatusFlags(RT_MODE_LEVEL);
+
+        // update every active device
+        foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_LEVEL);
+
     }
 
     // clean last
@@ -1102,14 +1136,17 @@ void TrainSidebar::Start()       // when start button is pressed
         load = 100;
         slope = 0.0;
 
+        clearStatusFlags(RT_MODE_ERGO|RT_MODE_SLOPE|RT_MODE_LEVEL);
         if (mode == ERG || mode == MRC) {
             setStatusFlags(RT_MODE_ERGO);
-            clearStatusFlags(RT_MODE_SPIN);
             foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_ERGO);
-        } else { // SLOPE MODE
-            setStatusFlags(RT_MODE_SPIN);
-            clearStatusFlags(RT_MODE_ERGO);
-            foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_SPIN);
+        } else if (mode == CRS) { // SLOPE MODE
+            setStatusFlags(RT_MODE_SLOPE);
+            foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_SLOPE);
+        }
+        else if (mode == LEV) { //LEVEL MODE
+            setStatusFlags(RT_MODE_LEVEL);
+            foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_LEVEL);
         }
 
         // tell the world
@@ -1363,7 +1400,10 @@ void TrainSidebar::Connect()
         return;
     }
 
-    activeDevices = devices();
+    //Setup level controls
+    levelDevice->controller->setLevel(level);
+    emit enableLevels(true);
+    emit levelChanged(QString("%1").arg(level));
 
     foreach(int dev, activeDevices) Devices[dev].controller->start();
     setStatusFlags(RT_CONNECTED);
@@ -1416,8 +1456,9 @@ void TrainSidebar::guiUpdate()           // refreshes the telemetry
             // and exit.  Nothing else to do until we finish calibrating
             return;
         } else {
-            rtData.setLoad(load); // always set load..
-            rtData.setSlope(slope); // always set load..
+            rtData.setLoad(load);   // always set load..
+            rtData.setSlope(slope); // slope
+            rtData.setLevel(level); // and level
 
             // fetch the right data from each device...
             foreach(int dev, activeDevices) {
@@ -1825,6 +1866,32 @@ void TrainSidebar::FFwdLap()
     }
 }
 
+// manual level adjustment, just set level for power calcs.
+// send to ANT+ device if it supports level control
+void TrainSidebar::LevHigher()
+{
+    if (!levelDevice)
+        return;
+
+    level += levelDevice->levelstep;
+    int maxlevel = levelDevice->levels + levelDevice->levelstart;
+    if (level > maxlevel) level = maxlevel;
+
+    levelDevice->controller->setLevel(level);
+    emit levelChanged(QString("%1").arg(level));
+}
+
+void TrainSidebar::LevLower()
+{
+    if (!levelDevice)
+        return;
+    level -= levelDevice->levelstep;
+    if (level <levelDevice->levelstart) level = levelDevice->levelstart;
+
+    levelDevice->controller->setLevel(level);
+    emit levelChanged(QString("%1").arg(level));
+}
+
 // higher load/gradient
 void TrainSidebar::Higher()
 {
@@ -1835,16 +1902,19 @@ void TrainSidebar::Higher()
         adjustIntensity(lastAppliedIntensity+5);
 
     } else {
-        if (status&RT_MODE_ERGO) load += 5;
-        else slope += 0.1;
 
-        if (load >1500) load = 1500;
-        if (slope >15) slope = 15;
+        if (status&RT_MODE_ERGO) load += 5;
+        else if (status&RT_MODE_SLOPE) slope += 0.1;
+
+        if (load >1500) load  = 1500;
+        if (slope >15)  slope = 15;
 
         if (status&RT_MODE_ERGO)
             foreach(int dev, activeDevices) Devices[dev].controller->setLoad(load);
-        else
+        else if (status&RT_MODE_SLOPE)
             foreach(int dev, activeDevices) Devices[dev].controller->setGradient(slope);
+//        else if (status&RT_MODE_LEVEL)
+//            foreach(int dev, activeDevices) Devices[dev].controller->setLevel(level);
     }
 }
 
@@ -1858,17 +1928,18 @@ void TrainSidebar::Lower()
         adjustIntensity(lastAppliedIntensity-5);
 
     } else {
-
         if (status&RT_MODE_ERGO) load -= 5;
-        else slope -= 0.1;
+        else if (status&RT_MODE_SLOPE) slope -= 0.1;
 
         if (load <0) load = 0;
         if (slope <-10) slope = -10;
 
         if (status&RT_MODE_ERGO)
             foreach(int dev, activeDevices) Devices[dev].controller->setLoad(load);
-        else
+        else if (status&RT_MODE_SLOPE)
             foreach(int dev, activeDevices) Devices[dev].controller->setGradient(slope);
+//        else if (status&RT_MODE_LEVEL)
+//            foreach(int dev, activeDevices) Devices[dev].controller->setLevel(level);
     }
 }
 
