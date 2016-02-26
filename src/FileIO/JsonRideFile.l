@@ -155,7 +155,6 @@ void JsonRideFilefree (void * ptr , yyscan_t /*scanner*/)
 [-+]?[0-9]+                     { *yylval = QString::fromUtf8(yytext); return JS_INTEGER; }
 [-+]?[0-9]+e-[0-9]+             { *yylval = QString::fromUtf8(yytext); return JS_FLOAT;   }
 [-+]?[0-9]+\.[-+e0-9]*          { *yylval = QString::fromUtf8(yytext); return JS_FLOAT;   }
-
 \"([^\"]|\\\")*\"               { *yylval = unprotect(yytext); return JS_STRING;  } /* contains non-quotes or escaped-quotes */
 [ \n\t\r]                       ;               /* we just ignore whitespace */
 .                               return yytext[0]; /* any other character, typically :, { or } */
