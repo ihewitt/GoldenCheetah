@@ -181,6 +181,8 @@ class RideNavigator : public GcWindow
         QVBoxLayout *mainLayout;
         RideItem *currentItem;
 
+        QTextEdit convertor; // used for plaintext conversion
+
         // properties
         int _sortByIndex;
         int _sortByOrder;

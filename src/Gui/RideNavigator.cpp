@@ -265,7 +265,6 @@ RideNavigator::resetView()
 
     // add metrics to the map
     const RideMetricFactory &factory = RideMetricFactory::instance();
-    QTextEdit convertor;
     for (int i=0; i<factory.metricCount(); i++) {
         convertor.setText(factory.rideMetric(factory.metricName(i))->name());
         QString converted = convertor.toPlainText();
