@@ -1484,6 +1484,14 @@ void TrainSidebar::guiUpdate()           // refreshes the telemetry
                     rtData.setHb(local.getSmO2(), local.gettHb()); //only moxy data from ant and robot devices right now
                 }
 
+                //Do we have a supported power band
+                int min, max;
+                local.getTrainerPowerRange(min,max);
+                if (min>0 && max>0)
+                {
+                    rtData.setTrainerPowerRange(min,max);
+                }
+
                 // what are we getting from this one?
                 if (dev == bpmTelemetry) rtData.setHr(local.getHr());
                 if (dev == rpmTelemetry) rtData.setCadence(local.getCadence());
@@ -1775,11 +1783,16 @@ void TrainSidebar::Calibrate()
                 Devices[dev].controller->setMode(RT_MODE_ERGO);
                 Devices[dev].controller->setLoad(load);
             }
-        } else {
+        } else if (status&RT_MODE_SLOPE) {
 
             foreach(int dev, activeDevices) {
-                Devices[dev].controller->setMode(RT_MODE_SPIN);
+                Devices[dev].controller->setMode(RT_MODE_SLOPE);
                 Devices[dev].controller->setGradient(slope);
+            }
+        } else if (status&RT_MODE_LEVEL) {
+            foreach(int dev, activeDevices) {
+                Devices[dev].controller->setMode(RT_MODE_LEVEL);
+                Devices[dev].controller->setLevel(level);
             }
         }
 
@@ -1905,16 +1918,18 @@ void TrainSidebar::Higher()
 
         if (status&RT_MODE_ERGO) load += 5;
         else if (status&RT_MODE_SLOPE) slope += 0.1;
+        else if (status&RT_MODE_LEVEL) level += 1;
 
         if (load >1500) load  = 1500;
         if (slope >15)  slope = 15;
+        if (level >16) level = 16;
 
         if (status&RT_MODE_ERGO)
             foreach(int dev, activeDevices) Devices[dev].controller->setLoad(load);
         else if (status&RT_MODE_SLOPE)
             foreach(int dev, activeDevices) Devices[dev].controller->setGradient(slope);
-//        else if (status&RT_MODE_LEVEL)
-//            foreach(int dev, activeDevices) Devices[dev].controller->setLevel(level);
+        else if (status&RT_MODE_LEVEL)
+            foreach(int dev, activeDevices) Devices[dev].controller->setLevel(level);
     }
 }
 
@@ -1930,16 +1945,18 @@ void TrainSidebar::Lower()
     } else {
         if (status&RT_MODE_ERGO) load -= 5;
         else if (status&RT_MODE_SLOPE) slope -= 0.1;
+        else if (status&RT_MODE_LEVEL) level -= 1;
 
         if (load <0) load = 0;
         if (slope <-10) slope = -10;
+        if (level <0) level = 0;
 
         if (status&RT_MODE_ERGO)
             foreach(int dev, activeDevices) Devices[dev].controller->setLoad(load);
         else if (status&RT_MODE_SLOPE)
             foreach(int dev, activeDevices) Devices[dev].controller->setGradient(slope);
-//        else if (status&RT_MODE_LEVEL)
-//            foreach(int dev, activeDevices) Devices[dev].controller->setLevel(level);
+        else if (status&RT_MODE_LEVEL)
+            foreach(int dev, activeDevices) Devices[dev].controller->setLevel(level);
     }
 }
 

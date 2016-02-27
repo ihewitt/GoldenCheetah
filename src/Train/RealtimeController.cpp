@@ -285,8 +285,11 @@ RealtimeController::processRealtimeData(RealtimeData &rtData)
             0.179,17.35,-82,
             0.207,16.1,-76
         };
-        double v = rtData.getSpeed();
-        rtData.setWatts(pol[level][0]*pow(v,2) + (pol[level][1]*v) + pol[level][2]);
+        if (parent->mode = LEV) //Only makes sense to calculate power in manual level mode
+        {
+            double v = rtData.getSpeed();
+            rtData.setWatts(pol[level][0]*pow(v,2) + (pol[level][1]*v) + pol[level][2]);
+        }
         }
         break;
 

@@ -507,27 +507,8 @@ bool TrainDB::createDefaultEntriesWorkout()
 
 bool TrainDB::upgradeDefaultEntriesWorkout()
 {
-
-    // set texts starting with " " in upgrade - since due to same translation errors the " " was lost e.g. in German
-    QSqlQuery query(db->database(sessionid));
-    bool rc;
-
-    // adding a space at the front of string to make manual mode always
-    // appear first in a sorted list is a bit of a hack, but works ok
-    QString manualErg = QString("UPDATE workouts SET filename = \"%1\" WHERE filepath = \"//1\";")
-            .arg(" " + tr("Manual Erg Mode")); // keep the SPACE separate so that translation cannot remove it
-    rc = query.exec(manualErg);
-
-    QString manualCrs = QString("UPDATE workouts SET filename = \"%1\" WHERE filepath = \"//2\";")
-            .arg(" " + tr("Manual Slope Mode")); // keep the SPACE separate so that translation cannot remove it
-    rc = query.exec(manualCrs);
-
-    QString manualLev = QString("UPDATE workouts SET filename = \"%1\" WHERE filepath = \"//3\";")
-            .arg(" " + tr("Manual Level Mode")); // keep the SPACE separate so that translation cannot remove it
-    rc = query.exec(manualLev);
-
-
-    return rc;
+// Just re-create
+    return createDefaultEntriesWorkout();
 }
 
 bool TrainDB::createDefaultEntriesVideosync()

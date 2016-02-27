@@ -35,6 +35,8 @@ RealtimeData::RealtimeData()
     trainerCalibRequired = false;
     trainerConfigRequired = false;
     trainerBrakeFault = false;
+    trainerMinPower = 0;
+    trainerMaxPower = 0;
     memset(spinScan, 0, 24);
 }
 
@@ -258,6 +260,12 @@ void RealtimeData::setTrainerBrakeFault(bool status)
     this->trainerBrakeFault = status;
 }
 
+void RealtimeData::setTrainerPowerRange(int min, int max)
+{
+    this->trainerMinPower = min;
+    this->trainerMaxPower = max;
+}
+
 bool RealtimeData::getTrainerReady() const
 {
     return trainerReady;
@@ -281,6 +289,12 @@ bool RealtimeData::getTrainerConfigRequired() const
 bool RealtimeData::getTrainerBrakeFault() const
 {
     return trainerBrakeFault;
+}
+
+void RealtimeData::getTrainerPowerRange(int &min, int &max) const
+{
+    min = trainerMinPower;
+    max = trainerMaxPower;
 }
 
 double RealtimeData::value(DataSeries series) const
