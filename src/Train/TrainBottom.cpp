@@ -69,7 +69,7 @@ TrainBottom::TrainBottom(TrainSidebar *trainSidebar, QWidget *parent) :
     QHBoxLayout *intensityControlLayout = new QHBoxLayout();
     QVBoxLayout *intensbuttons = new QVBoxLayout;
     intensityControlLayout->addLayout(intensbuttons);
-    QIcon upIcon(":images/oxygen/up-arrow-bw.png");
+    QIcon upIcon(":images/oxygen/go-up.png");
     QPushButton *loadUp = new QPushButton(upIcon, "", this);
     loadUp->setFocusPolicy(Qt::NoFocus);
     loadUp->setIconSize(QSize(32,32));
@@ -82,9 +82,9 @@ TrainBottom::TrainBottom(TrainSidebar *trainSidebar, QWidget *parent) :
     loadUp->setShortcut(Qt::Key_Plus);
 #endif
     loadUp->setStyleSheet("background-color: rgba( 255, 255, 255, 0% ); border: 0px;");
-    intensbuttons->addWidget(loadUp);
+    levelbuttons->addWidget(loadUp);
 
-    QIcon downIcon(":images/oxygen/down-arrow-bw.png");
+    QIcon downIcon(":images/oxygen/go-down.png");
     QPushButton *loadDown = new QPushButton(downIcon, "", this);
     loadDown->setFocusPolicy(Qt::NoFocus);
     loadDown->setIconSize(QSize(32,32));
@@ -97,7 +97,7 @@ TrainBottom::TrainBottom(TrainSidebar *trainSidebar, QWidget *parent) :
     loadDown->setShortcut(Qt::Key_Minus);
 #endif
     loadDown->setStyleSheet("background-color: rgba( 255, 255, 255, 0% ); border: 0px;"); 
-    intensbuttons->addWidget(loadDown);
+    levelbuttons->addWidget(loadDown);
 
     QSlider *intensitySlider = new QSlider(Qt::Vertical, this);
     intensitySlider->setAutoFillBackground(false);

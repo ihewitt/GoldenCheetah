@@ -122,11 +122,13 @@ public:
     void setTrainerCalibRequired(bool status);
     void setTrainerConfigRequired(bool status);
     void setTrainerBrakeFault(bool status);
+    void setTrainerPowerRange(int min, int max);
     bool getTrainerReady() const;
     bool getTrainerRunning() const;
     bool getTrainerCalibRequired() const;
     bool getTrainerConfigRequired() const;
     bool getTrainerBrakeFault() const;
+    void getTrainerPowerRange(int& min, int& max) const;
 
     uint8_t spinScan[24];
 
@@ -156,6 +158,8 @@ private:
     bool trainerCalibRequired;
     bool trainerConfigRequired;
     bool trainerBrakeFault;
+    int trainerMinPower;
+    int trainerMaxPower;
 };
 
 #endif

@@ -351,10 +351,10 @@ GcUpgrade::upgrade(const QDir &home)
 
 
     //----------------------------------------------------------------------
-    // 3.3 upgrade processing
+    // 4.0 upgrade processing
     //----------------------------------------------------------------------
 
-    if (last < VERSION33_BUILD) {
+    if (last < VERSION40_BUILD) {
 
         trainDB->upgradeDefaultEntriesWorkout();
     }
@@ -363,7 +363,6 @@ GcUpgrade::upgrade(const QDir &home)
     //----------------------------------------------------------------------
     // ... here any further Release Number dependent Upgrade Process is to be added ...
     //----------------------------------------------------------------------
-
 
 
     //----------------------------------------------------------------------
