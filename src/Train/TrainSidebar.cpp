@@ -684,6 +684,11 @@ TrainSidebar::deviceTreeWidgetSelectionChanged()
     if (status&RT_CONNECTED) Disconnect(); // disconnect first
     if (autoConnect) Connect(); // re-connect
 
+    updateLevelDevice();
+}
+
+void TrainSidebar::updateLevelDevice()
+{
     levelDevice=0;
     emit enableLevels(false);
 
@@ -1140,8 +1145,7 @@ void TrainSidebar::Start()       // when start button is pressed
         } else if (mode == CRS) { // SLOPE MODE
             setStatusFlags(RT_MODE_SLOPE);
             foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_SLOPE);
-        }
-        else if (mode == LEV) { //LEVEL MODE
+        } else if (mode == LEV) { //LEVEL MODE
             setStatusFlags(RT_MODE_LEVEL);
             foreach(int dev, activeDevices) Devices[dev].controller->setMode(RT_MODE_LEVEL);
         }
@@ -1398,7 +1402,8 @@ void TrainSidebar::Connect()
     }
 
     //Setup level controls
-    levelDevice->controller->setLevel(level);
+    if (levelDevice)
+        levelDevice->controller->setLevel(level);
     emit enableLevels(true);
     emit levelChanged(QString("%1").arg(level));
 

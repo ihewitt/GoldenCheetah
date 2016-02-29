@@ -126,6 +126,8 @@ class TrainSidebar : public GcWindow
         int currentStatus() {return status;}
 
         int currentLevel() { return level;}
+        void updateLevelDevice();
+
     signals:
 
         void deviceSelected();

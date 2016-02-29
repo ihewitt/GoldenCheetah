@@ -285,10 +285,20 @@ RealtimeController::processRealtimeData(RealtimeData &rtData)
             0.179,17.35,-82,
             0.207,16.1,-76
         };
-        if (parent->mode = LEV) //Only makes sense to calculate power in manual level mode
+
+        //For the qubo only enable device levels in manual level mode,
+        //otherwise the levels are controlled dynamically by ANT+
+        if (parent->mode == LEV) //Only makes sense to calculate power in manual level mode
         {
             double v = rtData.getSpeed();
             rtData.setWatts(pol[level][0]*pow(v,2) + (pol[level][1]*v) + pol[level][2]);
+            dc->levels = 16;
+            parent->updateLevelDevice();
+        }
+        else
+        {
+            dc->levels = 0; //Disable device levels
+            parent->updateLevelDevice();
         }
         }
         break;
