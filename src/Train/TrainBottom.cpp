@@ -45,7 +45,7 @@ TrainBottom::TrainBottom(TrainSidebar *trainSidebar, QWidget *parent) :
     levUp->setStyleSheet("background-color: rgba( 255, 255, 255, 0% ); border: 0px;");
     levelbuttons->addWidget(levUp);
 
-    levLabel = new QLabel("-",this);
+    levLabel = new QLabel("Level",this);
     levLabel->setAlignment(Qt::AlignCenter);
     levelbuttons->addWidget(levLabel);
 
@@ -208,16 +208,15 @@ TrainBottom::TrainBottom(TrainSidebar *trainSidebar, QWidget *parent) :
     QCheckBox *hideOnIdle = new QCheckBox(tr("Auto Hide"), this);
     intensityControlLayout->addWidget(hideOnIdle);
 
-    levelwidget = new QWidget(this);
-    levelwidget->setLayout(levelbuttons);
-    toolbuttons->addWidget(levelwidget);
-
     QHBoxLayout *allControlsLayout = new QHBoxLayout();
     allControlsLayout->addStretch();
     allControlsLayout->addLayout(toolbuttons);
     //allControlsLayout->addLayout(levelwidget);
     allControlsLayout->addLayout(intensityControlLayout);
 
+    levelwidget = new QWidget(this);
+    levelwidget->setLayout(levelbuttons);
+    intensityControlLayout->addWidget(levelwidget);
     levelwidget->setVisible(false);
 
     connect(m_playButton, SIGNAL(clicked()), m_trainSidebar, SLOT(Start()));
