@@ -1143,6 +1143,14 @@ AddFinal::AddFinal(AddDeviceWizard *parent) : QWizardPage(parent), wizard(parent
     virtualPower->addItem(tr("Power - Cyclops Magneto Pro (Road)"));                        // 19
     virtualPower->addItem(tr("Power - Blackburn Tech Fluid"));                              // 20
 
+    QSettings trainers ("/home/ivor/trainerconfig.ini", QSettings::IniFormat); //move
+    QStringList keys = trainers.childGroups();
+    foreach(QString id, keys) {
+        printf("%s\n",id.toStdString().c_str());
+        QString name = trainers.value(id + "/description").toString();
+        virtualPower->addItem( name );
+    }
+
     //
     // Wheel size
     //
@@ -1235,6 +1243,42 @@ AddFinal::validatePage()
         add.postProcess = virtualPower->currentIndex();
         add.wheelSize = wheelSizeEdit->text().toInt();
 
+        if (add.postProcess > 20) // Initialise from config
+        {
+            int id = add.postProcess - 20;
+
+            QSettings trainers ("/home/ivor/trainerconfig.ini", QSettings::IniFormat); //move
+            QStringList keys = trainers.childGroups();
+            QString name = keys[id];
+
+            int formula = trainers.value(name + "/formulatype", 1).toInt();
+            int levels = trainers.value(name + "/level/number").toInt();
+            int start = trainers.value(name + "/level/start", 1).toInt();
+            int step = trainers.value(name + "/level/step", 1).toInt();
+            QString units = trainers.value(name + "/units","km").toString();
+
+            int constants = trainers.value(name + "/params/values").toInt(); //number of constants
+
+            add.factors = new double[levels*constants];
+            for (int i=1; i<levels; ++i)
+            {
+                QString cstr = trainers.value(name + QString("/param/%1").arg(i)).toString();
+                QStringList cs = cstr.split(QChar(','));
+
+                int n=0;
+                foreach (QString num, cs)
+                {
+                    add.factors[(i-1)*levels + n] = num.toDouble();
+                    n++;
+                }
+            }
+            add.levels = levels;
+            add.levelstart = start;
+            add.levelstep = step;
+
+        }
+        else //Hardcoded initialise
+        {
         //Initialise level controls
         switch (add.postProcess)
         {
@@ -1284,6 +1328,7 @@ AddFinal::validatePage()
             add.levelstep=0;
             break;
         };
+        }
 
         QList<DeviceConfiguration> list = all.getList();
         list.insert(0, add);

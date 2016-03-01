@@ -136,7 +136,7 @@ class TrainSidebar : public GcWindow
         void stop();
         void intensityChanged(int value);
         void statusChanged(int status);
-        void levelChanged(const QString &level);
+        void levelChanged(int level);
         void enableLevels(bool enable);
 
     private slots:

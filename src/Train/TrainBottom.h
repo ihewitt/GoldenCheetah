@@ -24,7 +24,8 @@
 class TrainSidebar;
 class QPushButton;
 class QLabel;
-class QVBoxLayout;
+class QHBoxLayout;
+class QLCDNumber;
 
 class TrainBottom : public QWidget
 {
@@ -36,9 +37,9 @@ private:
     TrainSidebar *m_trainSidebar;
     QPushButton *m_playButton, *m_rewindButton, *m_stopButton, *m_forwardButton;
     QPushButton *m_lapButton, *m_connectButton;
-    QLabel *levLabel;
+    QLCDNumber *levLabel;
     QWidget *levelwidget;
-    QVBoxLayout *levelbuttons;
+    QHBoxLayout *levelbuttons;
 
 private slots:
     void updatePlayButtonIcon();
