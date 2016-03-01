@@ -782,7 +782,8 @@ void ANTChannel::broadcastEvent(unsigned char *ant_message)
 
                    // determine trainer level setting to figure out power
                    // this seems to be the logic the qubo is using to match level to power
-                   int level;
+/* unreliable - disable for now.
+                     int level;
                    double speed = antMessage.quboSpeed;
                    double load = parent->getLoad();
                    float power=0;
@@ -796,7 +797,7 @@ void ANTChannel::broadcastEvent(unsigned char *ant_message)
                                break;
                        }
                    }
-                   is_alt ? parent->setAltWatts(power):parent->setWatts(power);
+                   is_alt ? parent->setAltWatts(power):parent->setWatts(power);*/
                }
             }
             break;

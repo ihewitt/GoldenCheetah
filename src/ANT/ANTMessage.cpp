@@ -1048,7 +1048,7 @@ ANTMessage ANTMessage::fecSetTargetPower(const uint8_t channel, const uint16_t t
 
 ANTMessage ANTMessage::quboSetTargetPower(const uint8_t channel, const uint16_t targetPower) // power in 1W
 {
-    uint16_t powerValue = targetPower>990?990:targetPower;
+    uint16_t powerValue = 100 + targetPower>990?990:targetPower;
 
     return ANTMessage(9, ANT_ACK_DATA, channel,
                       (uint8_t)(powerValue & 0xFF), (uint8_t)(powerValue >> 8),

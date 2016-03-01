@@ -701,7 +701,7 @@ void TrainSidebar::updateLevelDevice()
 
             levelDevice->controller->setLevel(level);
             emit enableLevels(true);
-            emit levelChanged(QString("%1").arg(level));
+            emit levelChanged(level);
             break;
         }
     }
@@ -1405,7 +1405,7 @@ void TrainSidebar::Connect()
     if (levelDevice)
         levelDevice->controller->setLevel(level);
     emit enableLevels(true);
-    emit levelChanged(QString("%1").arg(level));
+    emit levelChanged(level);
 
     foreach(int dev, activeDevices) Devices[dev].controller->start();
     setStatusFlags(RT_CONNECTED);
@@ -1893,7 +1893,7 @@ void TrainSidebar::LevHigher()
     if (level > maxlevel) level = maxlevel;
 
     levelDevice->controller->setLevel(level);
-    emit levelChanged(QString("%1").arg(level));
+    emit levelChanged(level);
 }
 
 void TrainSidebar::LevLower()
@@ -1904,7 +1904,7 @@ void TrainSidebar::LevLower()
     if (level <levelDevice->levelstart) level = levelDevice->levelstart;
 
     levelDevice->controller->setLevel(level);
-    emit levelChanged(QString("%1").arg(level));
+    emit levelChanged(level);
 }
 
 // higher load/gradient

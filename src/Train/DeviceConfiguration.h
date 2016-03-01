@@ -45,6 +45,11 @@ class DeviceConfiguration
     int  levelstep;             // What's the level stepping
     int  levelstart;            // starting from.
 
+    //values for user defined formulae
+    int formulatype;    // 1: a*v^3 + b*v^2 + c*v^1 + d;
+    bool km;            // 1 - km
+    double *factors;    // factors for user defined channel
+
     RealtimeController *controller; // can be used to allocate controller for this device
                                     // although a bit odd, it makes synchronising the config
                                     // with runtime allocation a bit simpler in traintool

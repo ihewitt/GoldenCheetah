@@ -158,5 +158,7 @@
         <file>images/oxygen/down-arrow-bw.png</file>
         <file>images/oxygen/go-up.png</file>
         <file>images/oxygen/go-down.png</file>
+        <file>images/oxygen/go-next.png</file>
+        <file>images/oxygen/go-previous.png</file>
     </qresource>
 </RCC>
