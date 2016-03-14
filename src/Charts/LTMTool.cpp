@@ -1904,6 +1904,9 @@ EditMetricDetailDialog::EditMetricDetailDialog(Context *context, LTMTool *ltmToo
         QTreeWidgetItem *add;
         add = new QTreeWidgetItem(metricTree->invisibleRootItem(), METRIC_TYPE);
         add->setText(0, metric.name);
+        if (metric.metric != NULL) add->setToolTip(0, metric.metric->description());
+        else if (metric.type == METRIC_META) add->setToolTip(0, tr("Metadata Field"));
+        else if (metric.type == METRIC_PM) add->setToolTip(0, tr("PMC metric"));
     }
     metricTree->expandItem(metricTree->invisibleRootItem());
 

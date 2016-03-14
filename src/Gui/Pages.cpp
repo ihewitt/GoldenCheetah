@@ -1423,8 +1423,14 @@ RiderPhysPage::RiderPhysPage(QWidget *parent, Context *context) : QWidget(parent
 qint32
 RiderPhysPage::saveClicked()
 {
-    appsettings->setCValue(context->athlete->cyclist, GC_WEIGHT, weight->value() * (context->athlete->useMetricUnits ? 1.0 : KG_PER_LB));
-    appsettings->setCValue(context->athlete->cyclist, GC_HEIGHT, height->value() * (context->athlete->useMetricUnits ? 1.0/100.0 : CM_PER_INCH/100.0));
+    // it will be updated by the general page, but context->athlete->useMetricUnits
+    // will not have been applied yet, so we need to honour the PENDING setting rather
+    // than the value in context->athlete->useMetricUnits
+    QVariant unit = appsettings->value(NULL, GC_UNIT, GC_UNIT_METRIC);
+    bool metricUnits = (unit.toString() == GC_UNIT_METRIC);
+
+    appsettings->setCValue(context->athlete->cyclist, GC_WEIGHT, weight->value() * (metricUnits ? 1.0 : KG_PER_LB));
+    appsettings->setCValue(context->athlete->cyclist, GC_HEIGHT, height->value() * (metricUnits ? 1.0/100.0 : CM_PER_INCH/100.0));
     appsettings->setCValue(context->athlete->cyclist, GC_WBALTAU, wbaltau->value());
 
 
@@ -2328,6 +2334,7 @@ IntervalMetricsPage::IntervalMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         availList->addItem(item);
     }
     foreach (QString symbol, selectedMetrics) {
@@ -2336,6 +2343,7 @@ IntervalMetricsPage::IntervalMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         selectedList->addItem(item);
     }
 
@@ -2523,6 +2531,7 @@ BestsMetricsPage::BestsMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         availList->addItem(item);
     }
     foreach (QString symbol, selectedMetrics) {
@@ -2531,6 +2540,7 @@ BestsMetricsPage::BestsMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         selectedList->addItem(item);
     }
 
@@ -2691,7 +2701,9 @@ CustomMetricsPage::refreshTable()
 
         QTreeWidgetItem *add = new QTreeWidgetItem(table->invisibleRootItem());
         add->setText(0, m.symbol);
+        add->setToolTip(0, m.description);
         add->setText(1, m.name);
+        add->setToolTip(1, m.description);
     }
 }
 
@@ -2897,6 +2909,7 @@ SummaryMetricsPage::SummaryMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         availList->addItem(item);
     }
     foreach (QString symbol, selectedMetrics) {
@@ -2905,6 +2918,7 @@ SummaryMetricsPage::SummaryMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         selectedList->addItem(item);
     }
 

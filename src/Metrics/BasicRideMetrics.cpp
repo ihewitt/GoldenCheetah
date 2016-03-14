@@ -43,6 +43,7 @@ class RideCount : public RideMetric {
         setName(tr("Activities"));
         setMetricUnits(tr(""));
         setImperialUnits(tr(""));
+        setDescription(tr("Activity Count"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &) {
@@ -53,6 +54,40 @@ class RideCount : public RideMetric {
 
 static bool countAdded =
     RideMetricFactory::instance().addMetric(RideCount());
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+class ToExhaustion : public RideMetric {
+    Q_DECLARE_TR_FUNCTIONS(ToExhaustion)
+    public:
+
+    ToExhaustion()
+    {
+        setSymbol("ride_te");
+        setInternalName("To Exhaustion");
+    }
+    void initialize() {
+        setName(tr("To Exhaustion"));
+        setMetricUnits(tr(""));
+        setImperialUnits(tr(""));
+        setDescription(tr("Count of exhaustion points marked by the user in an activity"));
+    }
+
+    void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
+        int c=0;
+        if (item && item->ride()) {
+            foreach(RideFilePoint *rp, item->ride()->referencePoints()) {
+                if (rp->secs > 0) c++;
+            }
+        }
+        setValue(c);
+    }
+    RideMetric *clone() const { return new ToExhaustion(*this); }
+};
+
+static bool teAdded =
+    RideMetricFactory::instance().addMetric(ToExhaustion());
 
 //////////////////////////////////////////////////////////////////////////////
 class WorkoutTime : public RideMetric {
@@ -73,6 +108,7 @@ class WorkoutTime : public RideMetric {
         setName(tr("Duration"));
         setMetricUnits(tr("seconds"));
         setImperialUnits(tr("seconds"));
+        setDescription(tr("Total Duration"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -121,6 +157,7 @@ class TimeRiding : public RideMetric {
         setName(tr("Time Moving"));
         setMetricUnits(tr("seconds"));
         setImperialUnits(tr("seconds"));
+        setDescription(tr("Time with speed or cadence different from zero"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -175,6 +212,7 @@ class TimeCarrying : public RideMetric {
         setName(tr("Time Carrying (Est)"));
         setMetricUnits(tr("seconds"));
         setImperialUnits(tr("seconds"));
+        setDescription(tr("Time with low speed and elevation gain but no power nor cadence"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -253,6 +291,7 @@ class ElevationGainCarrying : public RideMetric {
         setMetricUnits(tr("meters"));
         setImperialUnits(tr("feet"));
         setConversion(FEET_PER_METER);
+        setDescription(tr("Elevation gained at low speed with no power nor cadence"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -325,6 +364,7 @@ class TotalDistance : public RideMetric {
         setImperialUnits(tr("miles"));
         setPrecision(3);
         setConversion(MILES_PER_KM);
+        setDescription(tr("Total Distance in km or miles"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -393,6 +433,7 @@ class DistanceSwim : public RideMetric {
         setImperialUnits(tr("yd"));
         setPrecision(0);
         setConversion(1.0/METERS_PER_YARD);
+        setDescription(tr("Total Distance in meters or yards"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -440,6 +481,7 @@ class ClimbRating : public RideMetric {
         setImperialUnits(tr(""));
         setType(RideMetric::Total);
         setPrecision(0);
+        setDescription(tr("According to Dan Conelly: Elevation Gain ^2 / Distance / 1000, 100 is HARD"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -489,6 +531,7 @@ class AthleteWeight : public RideMetric {
         setImperialUnits(tr("lbs"));
         setPrecision(2);
         setConversion(LB_PER_KG);
+        setDescription(tr("Weight in kg or lbs: first from Withings data, then from Activity metadaa and last from Athlete configuration with 75kg default"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -535,6 +578,7 @@ class AthleteFat : public RideMetric {
         setImperialUnits(tr("lbs"));
         setPrecision(2);
         setConversion(LB_PER_KG);
+        setDescription(tr("Bodyfat in kg or lbs from Withings data"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -573,6 +617,7 @@ class AthleteLean : public RideMetric {
         setImperialUnits(tr("lbs"));
         setPrecision(2);
         setConversion(LB_PER_KG);
+        setDescription(tr("Lean Weight in kg or lbs from Withings data"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -610,6 +655,7 @@ class AthleteFatP : public RideMetric {
         setMetricUnits(tr("%"));
         setImperialUnits(tr("%"));
         setPrecision(1);
+        setDescription(tr("Bodyfat Percent from Withings data"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -649,6 +695,7 @@ class ElevationGain : public RideMetric {
         setMetricUnits(tr("meters"));
         setImperialUnits(tr("feet"));
         setConversion(FEET_PER_METER);
+        setDescription(tr("Elevation Gain in meters of feets"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -713,6 +760,7 @@ class ElevationLoss : public RideMetric {
         setMetricUnits(tr("meters"));
         setImperialUnits(tr("feet"));
         setConversion(FEET_PER_METER);
+        setDescription(tr("Elevation Loss in meters of feets"));
     }
 
 
@@ -774,6 +822,7 @@ class TotalWork : public RideMetric {
         setName(tr("Work"));
         setMetricUnits(tr("kJ"));
         setImperialUnits(tr("kJ"));
+        setDescription(tr("Total Work in kJ computed from power data"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -826,6 +875,7 @@ class AvgSpeed : public RideMetric {
         setType(RideMetric::Average);
         setPrecision(1);
         setConversion(MILES_PER_KM);
+        setDescription(tr("Average Speed in kph or mph, computed from distance over time when speed not zero"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &deps) {
@@ -843,12 +893,11 @@ class AvgSpeed : public RideMetric {
         if (item->ride()->areDataPresent()->kph) {
 
             secsMoving = 0;
-            bool withz = item->isSwim; // average with zeros for swims
 
             RideFileIterator it(item->ride(), spec);
             while (it.hasNext()) {
                 struct RideFilePoint *point = it.next();
-                if (withz || point->kph > 0.0) secsMoving += item->ride()->recIntSecs();
+                if (point->kph > 0.0) secsMoving += item->ride()->recIntSecs();
             }
 
             setValue(secsMoving ? km / secsMoving * 3600.0 : 0.0);
@@ -908,6 +957,7 @@ class Pace : public RideMetric {
         setImperialUnits(tr("min/mile"));
         setPrecision(1);
         setConversion(KM_PER_MILE);
+        setDescription(tr("Average Speed expressed in pace units: min/km or min/mile"));
    }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -974,6 +1024,7 @@ class PaceSwim : public RideMetric {
         setImperialUnits(tr("min/100yd"));
         setPrecision(1);
         setConversion(METERS_PER_YARD);
+        setDescription(tr("Average Speed expressed in swim pace units: min/100m or min/100yd"));
    }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -1022,6 +1073,7 @@ struct AvgPower : public RideMetric {
         setMetricUnits(tr("watts"));
         setImperialUnits(tr("watts"));
         setType(RideMetric::Average);
+        setDescription(tr("Average Power from all samples with power greater than or equal to zero"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1075,6 +1127,7 @@ struct AvgSmO2 : public RideMetric {
         setMetricUnits(tr("%"));
         setImperialUnits(tr("%"));
         setType(RideMetric::Average);
+        setDescription(tr("Average Muscle Oxygen Saturation, the percentage of hemoglobin that is carrying oxygen."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1128,6 +1181,7 @@ struct AvgtHb : public RideMetric {
         setImperialUnits(tr("g/dL"));
         setType(RideMetric::Average);
         setPrecision(2);
+        setDescription(tr("Average total hemoglobin concentration. The total grams of hemoglobin per deciliter."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1181,6 +1235,7 @@ struct AAvgPower : public RideMetric {
         setMetricUnits(tr("watts"));
         setImperialUnits(tr("watts"));
         setType(RideMetric::Average);
+        setDescription(tr("Average altitude power. Recorded power ajusted to take into account the effect of altitude on vo2max and thus power output."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1232,6 +1287,7 @@ struct NonZeroPower : public RideMetric {
         setMetricUnits(tr("watts"));
         setImperialUnits(tr("watts"));
         setType(RideMetric::Average);
+        setDescription(tr("Average Power without zero values, it gives inflated values when frecuent coasting is present"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1284,6 +1340,7 @@ struct AvgHeartRate : public RideMetric {
         setMetricUnits(tr("bpm"));
         setImperialUnits(tr("bpm"));
         setType(RideMetric::Average);
+        setDescription(tr("Average Heart Rate computed for samples when hr is greater than zero"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1335,6 +1392,7 @@ struct AvgCoreTemp : public RideMetric {
         setMetricUnits(tr("C"));
         setImperialUnits(tr("C"));
         setType(RideMetric::Average);
+        setDescription(tr("Average Core Temperature. The core body temperature estimate is based on HR data"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1388,6 +1446,7 @@ struct HeartBeats : public RideMetric {
         setMetricUnits(tr("beats"));
         setImperialUnits(tr("beats"));
         setType(RideMetric::Total);
+        setDescription(tr("Total Heartbeats"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1435,6 +1494,7 @@ class HrPw : public RideMetric {
         setMetricUnits("");
         setPrecision(3);
         setType(RideMetric::Average);
+        setDescription(tr("Power to Heart Rate Ratio in watts/bpm"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -1481,6 +1541,7 @@ class Workbeat : public RideMetric {
         setMetricUnits("");
         setPrecision(0);
         setType(RideMetric::Total);
+        setDescription(tr("Work * Heartbeats / 100000"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -1525,6 +1586,7 @@ class WattsRPE : public RideMetric {
         setMetricUnits("");
         setPrecision(3);
         setType(RideMetric::Average);
+        setDescription(tr("Watts to RPE ratio"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -1570,6 +1632,7 @@ class APPercent : public RideMetric {
         setMetricUnits("");
         setPrecision(0);
         setType(RideMetric::Average);
+        setDescription(tr("Power as percent of Pmax according to Power Zones"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -1619,6 +1682,7 @@ class HrNp : public RideMetric {
         setMetricUnits("");
         setPrecision(3);
         setType(RideMetric::Average);
+        setDescription(tr("Normalized Power to Average Heart Rate ratio in watts/bpm"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -1668,6 +1732,7 @@ struct AvgCadence : public RideMetric {
         setMetricUnits(tr("rpm"));
         setImperialUnits(tr("rpm"));
         setType(RideMetric::Average);
+        setDescription(tr("Average Cadence, computed when Cadence > 0"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1733,6 +1798,7 @@ struct AvgTemp : public RideMetric {
         setConversion(FAHRENHEIT_PER_CENTIGRADE);
         setConversionSum(FAHRENHEIT_ADD_CENTIGRADE);
         setType(RideMetric::Average);
+        setDescription(tr("Average Temp from activity data"));
     }
 
 
@@ -1783,6 +1849,7 @@ class MaxPower : public RideMetric {
         setMetricUnits(tr("watts"));
         setImperialUnits(tr("watts"));
         setType(RideMetric::Peak);
+        setDescription(tr("Maximum Power"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1826,6 +1893,7 @@ class MaxSmO2 : public RideMetric {
         setMetricUnits(tr("%"));
         setImperialUnits(tr("%"));
         setType(RideMetric::Peak);
+        setDescription(tr("Maximum Muscle Oxygen Saturation, the percentage of hemoglobin that is carrying oxygen."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1870,6 +1938,7 @@ class MaxtHb : public RideMetric {
         setImperialUnits(tr("g/dL"));
         setType(RideMetric::Peak);
         setPrecision(2);
+        setDescription(tr("Maximum total hemoglobin concentration. The total grams of hemoglobin per deciliter."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1915,6 +1984,7 @@ class MinSmO2 : public RideMetric {
         setMetricUnits(tr("%"));
         setImperialUnits(tr("%"));
         setType(RideMetric::Peak);
+        setDescription(tr("Minimum Muscle Oxygen Saturation, the percentage of hemoglobin that is carrying oxygen."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1958,6 +2028,7 @@ class MintHb : public RideMetric {
         setImperialUnits(tr("g/dL"));
         setType(RideMetric::Low);
         setPrecision(2);
+        setDescription(tr("Minimum total hemoglobin concentration. The total grams of hemoglobin per deciliter."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2000,6 +2071,7 @@ class MaxHr : public RideMetric {
         setMetricUnits(tr("bpm"));
         setImperialUnits(tr("bpm"));
         setType(RideMetric::Peak);
+        setDescription(tr("Maximum Heart Rate."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2045,6 +2117,7 @@ class MinHr : public RideMetric {
         setMetricUnits(tr("bpm"));
         setImperialUnits(tr("bpm"));
         setType(RideMetric::Peak);
+        setDescription(tr("Minimum Heart Rate."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2097,6 +2170,7 @@ class MaxCT : public RideMetric {
         setMetricUnits(tr("C"));
         setImperialUnits(tr("C"));
         setType(RideMetric::Peak);
+        setDescription(tr("Maximum Core Temperature. The core body temperature estimate is based on HR data"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2145,6 +2219,7 @@ class MaxSpeed : public RideMetric {
         setType(RideMetric::Peak);
         setPrecision(1);
         setConversion(MILES_PER_KM);
+        setDescription(tr("Maximum Speed"));
     }
 
 
@@ -2193,6 +2268,7 @@ class MaxCadence : public RideMetric {
         setMetricUnits(tr("rpm"));
         setImperialUnits(tr("rpm"));
         setType(RideMetric::Peak);
+        setDescription(tr("Maximum Cadence"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2243,6 +2319,7 @@ class MaxTemp : public RideMetric {
         setPrecision(1);
         setConversion(FAHRENHEIT_PER_CENTIGRADE);
         setConversionSum(FAHRENHEIT_ADD_CENTIGRADE);
+        setDescription(tr("Maximum Cadence"));
     }
 
     // override to special case NA
@@ -2296,6 +2373,7 @@ class MinTemp : public RideMetric {
         setPrecision(1);
         setConversion(FAHRENHEIT_PER_CENTIGRADE);
         setConversionSum(FAHRENHEIT_ADD_CENTIGRADE);
+        setDescription(tr("Minimum Temperature"));
     }
 
     // override to special case NA
@@ -2346,6 +2424,7 @@ class NinetyFivePercentHeartRate : public RideMetric {
         setMetricUnits(tr("bpm"));
         setImperialUnits(tr("bpm"));
         setType(RideMetric::Average);
+        setDescription(tr("Heart Rate for which 95% of activity samples has lower HR values"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2394,6 +2473,7 @@ class VAM : public RideMetric {
         setImperialUnits("");
         setMetricUnits("");
         setType(RideMetric::Average);
+        setDescription(tr("Velocita Ascensionale Media, average ascent speed in vertical meters per hour"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -2434,6 +2514,7 @@ class EOA : public RideMetric {
         setImperialUnits("%");
         setMetricUnits("%");
         setType(RideMetric::Average);
+        setDescription(tr("Relationship between altitude adjusted power and recorded power"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -2477,6 +2558,7 @@ class Gradient : public RideMetric {
         setMetricUnits("%");
         setPrecision(1);
         setType(RideMetric::Average);
+        setDescription(tr("Elevation Gain to Total Distance percent ratio"));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -2524,6 +2606,7 @@ class MeanPowerVariance : public RideMetric {
         setMetricUnits("watts change");
         setPrecision(2);
         setType(RideMetric::Average);
+        setDescription(tr("Mean Power Deviation with respect to 30sec Moving Average"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2591,6 +2674,7 @@ class MaxPowerVariance : public RideMetric {
         setMetricUnits("watts change");
         setPrecision(2);
         setType(RideMetric::Average);
+        setDescription(tr("Maximum Power Deviation with respect to 30sec Moving Average"));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &deps) {
@@ -2650,6 +2734,7 @@ class AvgLTE : public RideMetric {
         setImperialUnits(tr("%"));
         setType(RideMetric::Average);
         setPrecision(1);
+        setDescription(tr("It measures how much of the power delivered to the left pedal is pushing it forward, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2702,6 +2787,7 @@ class AvgRTE : public RideMetric {
         setImperialUnits(tr("%"));
         setType(RideMetric::Average);
         setPrecision(1);
+        setDescription(tr("It measures how much of the power delivered to the right pedal is pushing it forward, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2753,6 +2839,7 @@ class AvgLPS : public RideMetric {
         setImperialUnits(tr("%"));
         setType(RideMetric::Average);
         setPrecision(1);
+        setDescription(tr("It measures how smoothly power is delivered to the left pedal throughout the revolution, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2804,6 +2891,7 @@ class AvgRPS : public RideMetric {
         setImperialUnits(tr("%"));
         setType(RideMetric::Average);
         setPrecision(1);
+        setDescription(tr("It measures how smoothly power is delivered to the right pedal throughout the revolution, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2855,6 +2943,7 @@ class AvgLPCO : public RideMetric {
         setType(RideMetric::Average);
         setPrecision(2);
         setConversion(INCH_PER_MM);
+        setDescription(tr("Platform center offset is the location on the left pedal platform where you apply force, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2907,6 +2996,7 @@ class AvgRPCO : public RideMetric {
         setType(RideMetric::Average);
         setPrecision(2);
         setConversion(INCH_PER_MM);
+        setDescription(tr("Platform center offset is the location on the right pedal platform where you apply force, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -2956,6 +3046,7 @@ class AvgLPPB : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the left pedal stroke angle where you start producing positive power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3005,6 +3096,7 @@ class AvgRPPB : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the right pedal stroke angle where you start producing positive power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3056,6 +3148,7 @@ class AvgLPPE : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the left pedal stroke angle where you end producing positive power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3105,6 +3198,7 @@ class AvgRPPE : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the right pedal stroke angle where you end producing positive power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3155,6 +3249,7 @@ class AvgLPPPB : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the left pedal stroke angle where you start producing peak power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3205,6 +3300,7 @@ class AvgRPPPB : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the right pedal stroke angle where you start producing peak power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3256,6 +3352,7 @@ class AvgLPPPE : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the left pedal stroke angle where you end producing peak power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3305,6 +3402,7 @@ class AvgRPPPE : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the right pedal stroke angle where you end producing peak power, on average."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -3357,6 +3455,7 @@ class AvgLPP : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the left pedal stroke region length where you produce positive power, on average."));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -3400,6 +3499,7 @@ class AvgRPP : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the right pedal stroke region length where you produce positive power, on average."));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -3441,6 +3541,7 @@ class AvgLPPP : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the left pedal stroke region length where you produce peak power, on average."));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -3484,6 +3585,7 @@ class AvgRPPP : public RideMetric {
         setMetricUnits(tr("°"));
         setType(RideMetric::Average);
         setPrecision(0);
+        setDescription(tr("It is the right pedal stroke region length where you produce peak power, on average."));
     }
 
     void compute(RideItem *, Specification, const QHash<QString,RideMetric*> &deps) {
@@ -3559,6 +3661,7 @@ struct TotalCalories : public RideMetric {
         setMetricUnits(tr("kcal"));
         setImperialUnits(tr("kcal"));
         setType(RideMetric::Total);
+        setDescription(tr("Total Calories estimated from Time Moving, Heart Rate, Weight, Sex and Age"));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &deps) {

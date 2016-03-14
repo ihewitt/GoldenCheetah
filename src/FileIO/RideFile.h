@@ -101,11 +101,14 @@ class RideFileInterval
                             EFFORT,                 // Sustained effort
                             ROUTE,                  // GPS Route
                             CLIMB,                  // Hills and Cols
+
+                            EXHAUSTION,             // A user marked point of exhaustion (stored in references)
+
                                                     // ADD NEW ONES HERE AND UPDATE last() below
 
                            } types;
 
-        static enum intervaltype last() { return CLIMB; } // update to last above!
+        static enum intervaltype last() { return EXHAUSTION; } // update to last above!
 
         typedef enum intervaltype IntervalType;
         static QString typeDescription(IntervalType);                  // return a string to represent the type
@@ -297,6 +300,7 @@ class RideFile : public QObject // QObject to emit signals
         // Working with REFERENCES
         void appendReference(const RideFilePoint &);
         void removeReference(int index);
+        void removeExhaustion(int index);
         const QVector<RideFilePoint*> &referencePoints() const { return referencePoints_; }
 
         // Index offset calculations
