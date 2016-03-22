@@ -52,6 +52,9 @@ RideSummaryWindow::RideSummaryWindow(Context *context, bool ridesummary) :
      GcChartWindow(context), context(context), ridesummary(ridesummary), useCustom(false), useToToday(false), filtered(false), bestsCache(NULL), force(false)
 {
     setRideItem(NULL);
+    _connected=NULL;
+    justloaded=false;
+    firstload=true;
 
     // allow user to select date range if in summary mode
     dateSetting = new DateSettingsEdit(this);
@@ -86,7 +89,13 @@ RideSummaryWindow::RideSummaryWindow(Context *context, bool ridesummary) :
     QVBoxLayout *vlayout = new QVBoxLayout;
     vlayout->setSpacing(0);
     vlayout->setContentsMargins(10,10,10,10);
+
+ #ifdef NOWEBKIT
+    rideSummary = new QWebEngineView(this);
+ #else
     rideSummary = new QWebView(this);
+ #endif
+
     rideSummary->setContentsMargins(0,0,0,0);
     rideSummary->page()->view()->setContentsMargins(0,0,0,0);
     rideSummary->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -101,9 +110,10 @@ RideSummaryWindow::RideSummaryWindow(Context *context, bool ridesummary) :
     if (ridesummary) {
 
         connect(this, SIGNAL(rideItemChanged(RideItem*)), this, SLOT(rideItemChanged()));
+        connect(context, SIGNAL(intervalsChanged()), this, SLOT(intervalsChanged()));
+
         connect(context, SIGNAL(rideChanged(RideItem*)), this, SLOT(refresh()));
         connect(context->athlete, SIGNAL(zonesChanged()), this, SLOT(refresh()));
-        connect(context, SIGNAL(intervalsChanged()), this, SLOT(refresh()));
         connect(context, SIGNAL(compareIntervalsStateChanged(bool)), this, SLOT(compareChanged()));
         connect(context, SIGNAL(compareIntervalsChanged()), this, SLOT(compareChanged()));
 
@@ -149,13 +159,21 @@ RideSummaryWindow::configChanged(qint32)
     defaultFont.fromString(appsettings->value(NULL, GC_FONT_DEFAULT, QFont().toString()).toString());
     defaultFont.setPointSize(appsettings->value(NULL, GC_FONT_DEFAULT_SIZE, 10).toInt());
 
+#ifdef NOWEBKIT
+#ifdef Q_OS_MAC
+    rideSummary->settings()->setFontSize(QWebEngineSettings::DefaultFontSize, defaultFont.pointSize()+1);
+#else
+    rideSummary->settings()->setFontSize(QWebEngineSettings::DefaultFontSize, defaultFont.pointSize()+2);
+#endif
+    rideSummary->settings()->setFontFamily(QWebEngineSettings::StandardFont, defaultFont.family());
+#else
 #ifdef Q_OS_MAC
     rideSummary->settings()->setFontSize(QWebSettings::DefaultFontSize, defaultFont.pointSize()+1);
 #else
     rideSummary->settings()->setFontSize(QWebSettings::DefaultFontSize, defaultFont.pointSize()+2);
 #endif
     rideSummary->settings()->setFontFamily(QWebSettings::StandardFont, defaultFont.family());
-
+#endif
 
     force = true;
     refresh();
@@ -182,7 +200,7 @@ void
 RideSummaryWindow::modelProgress(int year, int month)
 {
     // ignore if not visible!
-    if (!amVisible()) return;
+    if (!firstload || !amVisible()) return;
 
     QString string;
 
@@ -199,9 +217,14 @@ RideSummaryWindow::modelProgress(int year, int month)
 
         string = QString(tr("<h3>Modeling<br>%1</h3>")).arg(year);
     }
+
+#ifdef NOWEBKIT
+    rideSummary->page()->runJavaScript(
+        QString("var div = document.getElementById(\"modhead\"); div.innerHTML = '%1'; ").arg(string));;
+#else
     rideSummary->page()->mainFrame()->evaluateJavaScript(
         QString("var div = document.getElementById(\"modhead\"); div.innerHTML = '%1'; ").arg(string));;
-
+#endif
 }
 
 void
@@ -224,8 +247,12 @@ RideSummaryWindow::rideSelected()
 void
 RideSummaryWindow::rideItemChanged()
 {
-    // disconnect from previous
-    static QPointer<RideItem> _connected = NULL;
+    // did it really change ?
+    if (!firstload && _connected == myRideItem) return;
+
+    // ignore intervals changed if not set?
+    justloaded = true;
+
     if (_connected) {
         disconnect(_connected, SIGNAL(rideMetadataChanged()), this, SLOT(metadataChanged()));
     }
@@ -238,6 +265,17 @@ RideSummaryWindow::rideItemChanged()
     } else {
         setIsBlank(true);
     }
+}
+
+void
+RideSummaryWindow::intervalsChanged()
+{
+    // ignore if just loaded the ride
+    if (justloaded) {
+        justloaded = false;
+        return;
+    }
+    refresh();
 }
 
 void
@@ -263,7 +301,8 @@ RideSummaryWindow::refresh(QDate past)
 void
 RideSummaryWindow::refresh()
 {
-    if (!amVisible()) return; // only if you can see me!
+    if ((ridesummary && firstload && myRideItem==NULL) || !amVisible()) return; // only if you can see me!
+    firstload = false;
 
     if (isCompare()) { // COMPARE MODE
 
@@ -325,14 +364,23 @@ RideSummaryWindow::refresh()
                 setSubTitle(tr("Compare")); // fallback to this
             }
         }
+
+#ifdef NOWEBKIT
+        rideSummary->page()->setHtml(htmlCompareSummary());
+#else
         rideSummary->page()->mainFrame()->setHtml(htmlCompareSummary());
+#endif
 
     } else { // NOT COMPARE MODE - NORMAL MODE
 
         // if we're summarising a ride but have no ride to summarise
         if (ridesummary && !myRideItem) {
             setSubTitle(tr("Summary"));
-	        rideSummary->page()->mainFrame()->setHtml(GCColor::css(ridesummary));
+#ifdef NOWEBKIT
+            rideSummary->page()->setHtml(GCColor::css(ridesummary));
+#else
+            rideSummary->page()->mainFrame()->setHtml(GCColor::css(ridesummary));
+#endif
             return;
         }
 
@@ -356,7 +404,12 @@ RideSummaryWindow::refresh()
             fs.addFilter(context->ishomefiltered, context->homeFilters);
             specification.setFilterSet(fs);
         }
+
+#ifdef NOWEBKIT
+        rideSummary->page()->setHtml(htmlSummary());
+#else
         rideSummary->page()->mainFrame()->setHtml(htmlSummary());
+#endif
 
         setUpdatesEnabled(true); // ready to update now
     }

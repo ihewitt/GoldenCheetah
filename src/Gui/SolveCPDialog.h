@@ -26,6 +26,7 @@
 #include <QDoubleSpinBox>
 
 class Context;
+class SolverDisplay;
 class SolveCPDialog : public QDialog
 {
     Q_OBJECT
@@ -33,7 +34,12 @@ class SolveCPDialog : public QDialog
 
 
     public:
+
         SolveCPDialog(QWidget *parent, Context *);
+        ~SolveCPDialog();
+
+        bool eventFilter(QObject *o, QEvent *e);
+        QSize sizeHint() const { return QSize(800,550); }
 
     private:
 
@@ -60,7 +66,7 @@ class SolveCPDialog : public QDialog
         QLabel *bitLabel, *bcpLabel, *bwLabel, *btLabel, *bsumLabel;
 
         // visualise
-        QWidget *solverDisplay; // need to create a custom widget for this
+        SolverDisplay *solverDisplay; // need to create a custom widget for this
 
         QPushButton *solve, *close;
 
@@ -72,6 +78,7 @@ class SolveCPDialog : public QDialog
         // updates from solver
         void newBest(int,WBParms,double);
         void current(int,WBParms,double);
+        void end();
 
         void selectAll();
         void solveClicked();
@@ -79,4 +86,5 @@ class SolveCPDialog : public QDialog
 
     private:
         CPSolver *solver;
+        bool integral;
 };

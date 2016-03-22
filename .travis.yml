@@ -7,7 +7,6 @@ compiler:
 - gcc
 env:
   matrix:
-## Test 4.8 or 5.4.2
   - BRANCH=master QT=qt4 QT_PATH=qt
   - BRANCH=master QT=qt5 QT_PATH=qt5
   global:
@@ -20,8 +19,8 @@ env:
 before_install:
 - date
 - brew update
-##- sh travis/install-qt.sh
-- brew install $QT
+- sh travis/install-qt.sh
+##- brew install $QT
 - brew install libical
 - brew install libusb libusb-compat
 - brew install srmio
@@ -75,7 +74,7 @@ before_script:
 - sed -i "" "s|#\(ICAL_INSTALL =.*\)|\1 /usr/local|" src/gcconfig.pri
 - sed -i "" "s|#\(ICAL_LIBS    =.*\)|\1 -L/usr/local/lib -lical|" src/gcconfig.pri
 - sed -i "" "s|#\(LIBUSB_INSTALL =\).*|\1 /usr/local|" src/gcconfig.pri
-- sed -i "" "s|#\(LIBUSB_LIBS    =.*\)|\1 -L/usr/local/lib -lusb|" src/gcconfig.pri
+- sed -i "" "s|#\(LIBUSB_LIBS    =.*\)|\1 -L/usr/local/lib -lusb -lusb-1.0|" src/gcconfig.pri
 - sed -i "" "s|#\(SAMPLERATE_INSTALL =\).*|\1 /usr/local|" src/gcconfig.pri
 - sed -i "" "s|#\(SAMPLERATE_LIBS =\).*|\1 -L/usr/local/lib -lsamplerate|" src/gcconfig.pri
 - sed -i "" "s|#\(DEFINES += GC_HAVE_LION*\)|\1|" src/gcconfig.pri

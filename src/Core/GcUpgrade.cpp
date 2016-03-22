@@ -33,7 +33,6 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QFileDialog>
-#include <QWebFrame>
 #include <QScrollBar>
 
 bool
@@ -923,6 +922,19 @@ GcUpgradeLogDialog::GcUpgradeLogDialog(QDir homeDir) : QDialog(NULL, Qt::Dialog)
     toprow->addWidget(header);
     layout->addLayout(toprow);
 
+    QFont defaultFont;
+
+#ifdef NOWEBKIT
+    report = new QWebEngineView(this);
+    report->setContentsMargins(0,0,0,0);
+    report->page()->view()->setContentsMargins(0,0,0,0);
+    report->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //XXX WEBENGINE report->page()->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
+    report->setContextMenuPolicy(Qt::NoContextMenu);
+    report->setAcceptDrops(false);
+    report->settings()->setFontSize(QWebEngineSettings::DefaultFontSize, defaultFont.pointSize()+1);
+    report->settings()->setFontFamily(QWebEngineSettings::StandardFont, defaultFont.family());
+#else
     report = new QWebView(this);
     report->setContentsMargins(0,0,0,0);
     report->page()->view()->setContentsMargins(0,0,0,0);
@@ -930,11 +942,11 @@ GcUpgradeLogDialog::GcUpgradeLogDialog(QDir homeDir) : QDialog(NULL, Qt::Dialog)
     report->page()->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
     report->setContextMenuPolicy(Qt::NoContextMenu);
     report->setAcceptDrops(false);
-    connect( report, SIGNAL( linkClicked( QUrl ) ), this, SLOT( linkClickedSlot( QUrl ) ) );
-
-    QFont defaultFont; // mainwindow sets up the defaults.. we need to apply
     report->settings()->setFontSize(QWebSettings::DefaultFontSize, defaultFont.pointSize()+1);
     report->settings()->setFontFamily(QWebSettings::StandardFont, defaultFont.family());
+#endif
+
+    connect(report, SIGNAL(linkClicked(QUrl)), this, SLOT(linkClickedSlot(QUrl)));
 
     layout->addWidget(report);
 
@@ -959,7 +971,12 @@ GcUpgradeLogDialog::GcUpgradeLogDialog(QDir homeDir) : QDialog(NULL, Qt::Dialog)
 
     // the cyclist...
     reportText += QString("<center><h1>Cyclist: \"%1\"</h1></center><br>").arg(home.root().dirName());
+
+#ifdef NOWEBKIT
+    report->page()->setHtml(reportText);
+#else
     report->page()->mainFrame()->setHtml(reportText);
+#endif
 
 }
 
@@ -977,7 +994,7 @@ GcUpgradeLogDialog::saveAs()
     if (file.open(QIODevice::WriteOnly)) {
 
         // write the texts
-        out << report->page()->mainFrame()->toPlainText();
+        out << reportText;
 
     }
     file.close();
@@ -1007,8 +1024,14 @@ GcUpgradeLogDialog::append(QString text, int level) {
         default: // any other
             reportText += QString("%1 <br>").arg(text);
         }
+
+#ifdef NOWEBKIT
+        report->page()->setHtml(reportText);
+        //XXX WEBENGINE report->page()->setScrollBarValue(Qt::Vertical, report->page()->mainFrame()->scrollBarMaximum(Qt::Vertical));
+#else
         report->page()->mainFrame()->setHtml(reportText);
         report->page()->mainFrame()->setScrollBarValue(Qt::Vertical, report->page()->mainFrame()->scrollBarMaximum(Qt::Vertical));
+#endif
         this->repaint();
         QApplication::processEvents();
 

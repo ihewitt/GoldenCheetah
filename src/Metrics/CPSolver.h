@@ -47,6 +47,14 @@ class CPSolverConstraints {
     CPSolverConstraints(int cpf, int cpto, int wf, int wto, int tf, int tto) :
     cpf(cpf), cpto(cpto), wf(wf), wto(wto), tf(tf), tto(tto) { check(); }
     int cpf, cpto, wf, wto, tf, tto;
+    int ccpf, ccpto, cwf, cwto; // configured bounds for selected rides
+
+    void setConfig(int ccpf, int ccpto, int cwf, int cwto) {
+        this->ccpf = ccpf;
+        this->ccpto = ccpto;
+        this->cwf = cwf;
+        this->cwto = cwto;
+    }
 
     // swap if malformed
     void check() {
@@ -62,8 +70,8 @@ class CPSolver : public QObject {
 
     public:
 
-        // create a PMC data series for the athlete
-        // for ALL date ranges
+        // as simulated annealing algorithm to solve W', CP and tau
+        // from a collection of exhaustion points within a ride
         CPSolver(Context *);
 
         // set the data to solve

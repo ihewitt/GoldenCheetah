@@ -83,8 +83,8 @@ CPSolver::cost(WBParms parms)
 
     //qDebug()<<"cost="<<QString("%1").arg(sumwb2, 0, 'g', 7);
 
-    // what we got
-    return sumwb2 /1000.0f;
+    // what we got - normalise to number of fits
+    return (sumwb2/data.count()) /1000.0f;
 }
 
 double
@@ -105,15 +105,19 @@ CPSolver::compute(QVector<int> &ride, WBParms parms)
 
         } else {
 
+
             // DIFFERENTIAL
-            wpbal  += watts < parms.CP ? ((parms.CP-watts)*(wpbal-parms.W)/wpbal) : (parms.CP-watts);
+            wpbal  += watts < parms.CP ? ((double(parms.TAU)/100.0f) * (parms.W - wpbal)/parms.W * (parms.CP - watts) ) : (parms.CP-watts);
         }
 
         t++;
     }
 
-    //qDebug()<<"w'bal at exhaustion:"<<wpbal<<"t="<<t;
-    return wpbal;
+    // we solve for W'bal=500 as it is not possible to completely
+    // exhaust W', 500 is the point at which most athletes will
+    // fail to continue, on average.
+    // See: http://www.ncbi.nlm.nih.gov/pubmed/24509723
+    return wpbal - 500;
 }
 
 // get us a neighbour
@@ -138,9 +142,12 @@ CPSolver::neighbour(WBParms p, int k, int kmax)
     int TAUrange = 3 + ((constraints.tto - constraints.tf) * factor);
     int it=0;
 
+    // scale rand() to our range (32767 is typical for RAND_MAX)
+    double f = double(Wrange) / double(RAND_MAX);
+
     do {
         returning.CP = p.CP + (rand()%CPrange - (CPrange/2));
-        returning.W = p.W + (rand()%Wrange - (Wrange/2));
+        returning.W = p.W + (int(double(rand())*f)%Wrange - (Wrange/2));
         returning.TAU = p.TAU + (rand()%TAUrange - (TAUrange/2));
 
     } while (it++ < 3 && (returning.CP < constraints.cpf || returning.CP > constraints.cpto ||
@@ -199,8 +206,8 @@ CPSolver::start()
         WBParms snew = neighbour(s, k, kmax);
         double Enew = cost(snew);
 
-        // progress update
-        emit current(k, snew,Enew);
+        // progress update k=0 means stop so we offset by one
+        emit current(k+1, snew,Enew);
 
         // probability - always 1 if better, but randomly accept higher
         double random = double(rand()%101)/100.00f;
@@ -216,7 +223,9 @@ CPSolver::start()
         if (E < Ebest) {
             Ebest = E;
             sbest = s;
-            emit newBest(k, sbest, Ebest);
+
+            // k of zero means stop so we offset by one
+            emit newBest(k+1, sbest, Ebest);
             //qDebug()<<k<<"new best"<<Ebest <<s.CP<<s.W<<s.TAU;
         }
 
@@ -224,7 +233,10 @@ CPSolver::start()
         k++;
 
     }
+
+    // k of zero means stop
     emit newBest(0, sbest,Ebest);
+    //qDebug()<<"TOOK"<<p.elapsed();
 }
 
 double
