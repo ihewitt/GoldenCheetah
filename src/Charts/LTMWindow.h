@@ -23,7 +23,12 @@
 
 #include <QtGui>
 #include <QStackedWidget>
+#ifdef NOWEBKIT
+#include <QWebEngineView>
+#else
 #include <QWebView>
+#include <QWebFrame>
+#endif
 #include <QTimer>
 #include "Context.h"
 #include "Season.h"
@@ -241,7 +246,11 @@ class LTMWindow : public GcChartWindow
         QStackedWidget *stackWidget;
 
         // summary view
+#ifdef NOWEBKIT
+        QWebEngineView *dataSummary;
+#else
         QWebView *dataSummary;
+#endif
 
 
         // popup - the GcPane to display within

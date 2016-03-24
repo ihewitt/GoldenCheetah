@@ -181,6 +181,8 @@ WPrime::setRide(RideFile *input)
         // did we override CP in metadata / metrics ?
         int oCP = input->getTag("CP","0").toInt();
         if (oCP) CP=oCP;
+        int oT = input->getTag("Tau","0").toInt();
+        if (oT) TAU=oT;
         int oW = input->getTag("W'","0").toInt();
         if (oW) WPRIME=oW;
     }
@@ -205,12 +207,15 @@ WPrime::setRide(RideFile *input)
         } else EXP += value; // total expenditure above CP
     }
 
-    if (countBelowCP > 0)
-        TAU = 546.00f * exp(-0.01*(CP - (totalBelowCP/countBelowCP))) + 316.00f;
-    else
-        TAU = 546.00f * exp(-0.01*(CP)) + 316.00f;
+    // Tau can be set in the ridefile metadata
+    if (!TAU) {
+        if (countBelowCP > 0)
+            TAU = 546.00f * exp(-0.01*(CP - (totalBelowCP/countBelowCP))) + 316.00f;
+        else
+            TAU = 546.00f * exp(-0.01*(CP)) + 316.00f;
 
-    TAU = int(TAU); // round it down
+        TAU = int(TAU); // round it down
+    }
 
     // STEP 2: ITERATE OVER DATA TO CREATE W' DATA SERIES
 
@@ -742,7 +747,8 @@ class MinWPrime : public RideMetric {
         setType(RideMetric::Low);
         setMetricUnits(tr("kJ"));
         setImperialUnits(tr("kJ"));
-        setPrecision(1);
+        setPrecision(2);
+        setDescription(tr("Minimum W' bal, W' bal tracks the level of W' according to CP model during intermitent exercise."));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -772,6 +778,7 @@ class MaxWPrime : public RideMetric {
         setMetricUnits(tr("%"));
         setImperialUnits(tr("%"));
         setPrecision(0);
+        setDescription(tr("Maximum W' bal Expended expressed as percentage of W', W' bal tracks the level of W' according to CP model during intermitent exercise."));
     }
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
 
@@ -801,6 +808,7 @@ class MaxMatch : public RideMetric {
         setMetricUnits(tr("kJ"));
         setImperialUnits(tr("kJ"));
         setPrecision(1);
+        setDescription(tr("Maximum W' bal Match, W' bal tracks the level of W' according to CP model during intermitent exercise."));
     }
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
 
@@ -828,6 +836,7 @@ class Matches : public RideMetric {
         setName(tr("W'bal Matches"));
         setType(RideMetric::Total);
         setPrecision(0);
+        setDescription(tr("Number of W' balance Matches higher than 2kJ, W' bal tracks the level of W' according to CP model during intermitent exercise."));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -861,6 +870,7 @@ class WPrimeTau : public RideMetric {
         setMetricUnits(tr(""));
         setImperialUnits(tr(""));
         setPrecision(0);
+        setDescription(tr("W' bal TAU is the recovery time constant for W' bal, W' bal tracks the level of W' according to CP model during intermitent exercise."));
     }
 
     void compute(RideItem *item, Specification, const QHash<QString,RideMetric*> &) {
@@ -892,6 +902,7 @@ class WPrimeExp : public RideMetric {
         setMetricUnits(tr("kJ"));
         setImperialUnits(tr("kJ"));
         setPrecision(0);
+        setDescription(tr("W' Work is the amount of kJ produced while power is above CP."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -935,6 +946,7 @@ class WPrimeWatts : public RideMetric {
         setMetricUnits(tr("watts"));
         setImperialUnits(tr("watts"));
         setPrecision(0);
+        setDescription(tr("W' Power is the average power produce while power is above CP."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -978,6 +990,7 @@ class CPExp : public RideMetric {
         setMetricUnits(tr("kJ"));
         setImperialUnits(tr("kJ"));
         setPrecision(0);
+        setDescription(tr("Below CP Work is the amount of kJ produced while power is below CP."));
     }
 
     void compute(RideItem *item, Specification spec, const QHash<QString,RideMetric*> &) {
@@ -1080,6 +1093,7 @@ class WZoneTime1 : public WZoneTime {
             setName(tr("W1 W'bal Low Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when W' bal is below 25% of W'."));
         }
         RideMetric *clone() const { return new WZoneTime1(*this); }
 };
@@ -1098,6 +1112,7 @@ class WZoneTime2 : public WZoneTime {
             setName(tr("W2 W'bal Moderate Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when W' bal is between 25% and 50% of W'."));
         }
         RideMetric *clone() const { return new WZoneTime2(*this); }
 };
@@ -1116,6 +1131,7 @@ class WZoneTime3 : public WZoneTime {
             setName(tr("W3 W'bal Heavy Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when W' bal is between 50% and 75% of W'."));
         }
         RideMetric *clone() const { return new WZoneTime3(*this); }
 };
@@ -1134,6 +1150,7 @@ class WZoneTime4 : public WZoneTime {
             setName(tr("W4 W'bal Severe Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when W' bal is above 75% of W'."));
         }
         RideMetric *clone() const { return new WZoneTime4(*this); }
 };
@@ -1216,6 +1233,7 @@ class WCPZoneTime1 : public WCPZoneTime {
             setName(tr("W1 Above CP W'bal Low Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when Power is above CP and W' bal is below 25% of W'."));
         }
         RideMetric *clone() const { return new WCPZoneTime1(*this); }
 };
@@ -1234,6 +1252,7 @@ class WCPZoneTime2 : public WCPZoneTime {
             setName(tr("W2 Above CP W'bal Moderate Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when Power is above CP and W' bal is between 25% and 50% of W'."));
         }
         RideMetric *clone() const { return new WCPZoneTime2(*this); }
 };
@@ -1252,6 +1271,7 @@ class WCPZoneTime3 : public WCPZoneTime {
             setName(tr("W3 Above CP W'bal Heavy Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when Power is above CP and W' bal is between 50% and 75% of W'."));
         }
         RideMetric *clone() const { return new WCPZoneTime3(*this); }
 };
@@ -1270,6 +1290,7 @@ class WCPZoneTime4 : public WCPZoneTime {
             setName(tr("W4 W'bal Severe Fatigue"));
             setMetricUnits(tr("seconds"));
             setImperialUnits(tr("seconds"));
+            setDescription(tr("Time expended when Power is above CP and W' bal is above 75% of W'."));
         }
         RideMetric *clone() const { return new WCPZoneTime4(*this); }
 };
@@ -1343,6 +1364,7 @@ class WZoneWork1 : public WZoneWork {
             setName(tr("W1 W'bal Work Low Fatigue"));
             setMetricUnits(tr("kJ"));
             setImperialUnits(tr("kJ"));
+            setDescription(tr("Work produced when W' bal is below 25% of W'."));
         }
         RideMetric *clone() const { return new WZoneWork1(*this); }
 };
@@ -1361,6 +1383,7 @@ class WZoneWork2 : public WZoneWork {
             setName(tr("W2 W'bal Work Moderate Fatigue"));
             setMetricUnits(tr("kJ"));
             setImperialUnits(tr("kJ"));
+            setDescription(tr("Work produced when W' bal is between 25% and 50% of W'."));
         }
         RideMetric *clone() const { return new WZoneWork2(*this); }
 };
@@ -1379,6 +1402,7 @@ class WZoneWork3 : public WZoneWork {
             setName(tr("W3 W'bal Work Heavy Fatigue"));
             setMetricUnits(tr("kJ"));
             setImperialUnits(tr("kJ"));
+            setDescription(tr("Work produced when W' bal is between 50% and 75% of W'."));
         }
         RideMetric *clone() const { return new WZoneWork3(*this); }
 };
@@ -1397,6 +1421,7 @@ class WZoneWork4 : public WZoneWork {
             setName(tr("W4 W'bal Work Severe Fatigue"));
             setMetricUnits(tr("kJ"));
             setImperialUnits(tr("kJ"));
+            setDescription(tr("Work produced when Power is above CP and W' bal is above 75% of W'."));
         }
         RideMetric *clone() const { return new WZoneWork4(*this); }
 };

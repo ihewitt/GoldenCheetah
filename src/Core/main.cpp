@@ -28,7 +28,9 @@
 #include <QApplication>
 #include <QtGui>
 #include <QFile>
+#ifndef NOWEBKIT
 #include <QWebSettings>
+#endif
 #include <QMessageBox>
 #include "ChooseCyclistDialog.h"
 #ifdef GC_WANT_HTTP
@@ -218,8 +220,8 @@ main(int argc, char *argv[])
 
     // create the application -- only ever ONE regardless of restarts
     application = new QApplication(argc, argv);
-    IdleEventFilter idleFilter;
-    application->installEventFilter(&idleFilter);
+    //XXXIdleEventFilter idleFilter;
+    //XXXapplication->installEventFilter(&idleFilter);
 
 #ifdef Q_OS_MAC
     // get an autorelease pool setup
@@ -512,8 +514,10 @@ main(int argc, char *argv[])
         // reset QSettings (global & Athlete)
         appsettings->clearGlobalAndAthletes();
 
+#ifndef NOWEBKIT
         // clear web caches (stop warning of WebKit leaks)
         QWebSettings::clearMemoryCaches();
+#endif
 
     } while (restarting);
 

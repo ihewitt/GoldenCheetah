@@ -147,11 +147,11 @@ QString CloudDBCommon::cloudDBBaseURL = QString("https://%1.appspot.com/v1/").ar
 QVariant  CloudDBCommon::cloudDBContentType = QVariant("application/json");
 QByteArray CloudDBCommon::cloudDBBasicAuth = "Basic " + QByteArray(GC_CLOUD_DB_BASIC_AUTH) ;
 
-QList<QString> CloudDBCommon::cloudDBLangsIds = QList<QString>() << "en" << "fr" << "ja" << "pt-br" << "it" << "de" << "ru" << "cs" << "es" << "pt" << "zh-tw" << "xx";
+QList<QString> CloudDBCommon::cloudDBLangsIds = QList<QString>() << "en" << "fr" << "ja" << "pt-br" << "it" << "de" << "ru" << "cs" << "es" << "pt" << "zh-cn" << "zh-tw" << "xx";
 
 QList<QString> CloudDBCommon::cloudDBLangs = QList<QString>() << QObject::tr("English") << QObject::tr("French") << QObject::tr("Japanese") << QObject::tr("Portugese (Brazil)") <<
                                              QObject::tr("Italian") << QObject::tr("German") << QObject::tr("Russian") << QObject::tr("Czech") <<
-                                             QObject::tr("Spanish") << QObject::tr("Portugese") << QObject::tr("Chinese (Traditional)") << QObject::tr("Other");
+                                             QObject::tr("Spanish") << QObject::tr("Portugese") << QObject::tr("Chinese (Simplified)") << QObject::tr("Chinese (Traditional)") << QObject::tr("Other");
 
 QString CloudDBCommon::cloudDBTimeFormat = "yyyy-MM-ddTHH:mm:ssZ";
 
@@ -482,8 +482,8 @@ CloudDBHeader::getAllCachedHeader(QList<CommonAPIHeaderV1> *objectHeader, CloudD
     QMutableListIterator<CommonAPIHeaderV1> it(*objectHeader);
     while (it.hasNext()) {
         CommonAPIHeaderV1 header = it.next();
-        if (header.Id > 0 && updatedIds.contains(header.Id) ||
-            header.Key.size() > 0 && updatedStringIds.contains(header.Key)) {
+        if ((header.Id > 0 && updatedIds.contains(header.Id)) ||
+            (header.Key.size() > 0 && updatedStringIds.contains(header.Key))) {
             // update cache (Header Cache)
             it.remove();
         }

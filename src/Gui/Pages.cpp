@@ -75,6 +75,7 @@ GeneralPage::GeneralPage(Context *context) : context(context)
     langCombo->addItem(tr("Czech"));
     langCombo->addItem(tr("Spanish"));
     langCombo->addItem(tr("Portugese"));
+    langCombo->addItem(tr("Chinese (Simplified)"));    
     langCombo->addItem(tr("Chinese (Traditional)"));
 
     // Default to system locale
@@ -90,7 +91,8 @@ GeneralPage::GeneralPage(Context *context) : context(context)
     else if(lang.toString().startsWith("cs")) langCombo->setCurrentIndex(7);
     else if(lang.toString().startsWith("es")) langCombo->setCurrentIndex(8);
     else if(lang.toString().startsWith("pt")) langCombo->setCurrentIndex(9);
-    else if (lang.toString().startsWith("zh-tw")) langCombo->setCurrentIndex(10);
+    else if(lang.toString().startsWith("zh-cn")) langCombo->setCurrentIndex(10);    
+    else if (lang.toString().startsWith("zh-tw")) langCombo->setCurrentIndex(11);
     else langCombo->setCurrentIndex(0);
 
     configLayout->addWidget(langLabel, 0,0, Qt::AlignRight);
@@ -221,7 +223,7 @@ GeneralPage::saveClicked()
 {
     // Language
     static const QString langs[] = {
-        "en", "fr", "ja", "pt-br", "it", "de", "ru", "cs", "es", "pt", "zh-tw"
+        "en", "fr", "ja", "pt-br", "it", "de", "ru", "cs", "es", "pt", "zh-cn", "zh-tw"
     };
     appsettings->setValue(GC_LANG, langs[langCombo->currentIndex()]);
 
@@ -523,10 +525,6 @@ CredentialsPage::CredentialsPage(QWidget *parent, Context *context) : QScrollAre
     QLabel *strauthLabel = new QLabel(tr("Authorise"));
 
     stravaAuthorise = new QPushButton(tr("Authorise"), this);
-
-#ifdef GC_STRAVA_NO_CLIENT
-    stravaAuthorise->setEnabled(false);
-#endif
 
     stravaAuthorised = new QPushButton(this);
     stravaAuthorised->setContentsMargins(0,0,0,0);
@@ -1423,8 +1421,14 @@ RiderPhysPage::RiderPhysPage(QWidget *parent, Context *context) : QWidget(parent
 qint32
 RiderPhysPage::saveClicked()
 {
-    appsettings->setCValue(context->athlete->cyclist, GC_WEIGHT, weight->value() * (context->athlete->useMetricUnits ? 1.0 : KG_PER_LB));
-    appsettings->setCValue(context->athlete->cyclist, GC_HEIGHT, height->value() * (context->athlete->useMetricUnits ? 1.0/100.0 : CM_PER_INCH/100.0));
+    // it will be updated by the general page, but context->athlete->useMetricUnits
+    // will not have been applied yet, so we need to honour the PENDING setting rather
+    // than the value in context->athlete->useMetricUnits
+    QVariant unit = appsettings->value(NULL, GC_UNIT, GC_UNIT_METRIC);
+    bool metricUnits = (unit.toString() == GC_UNIT_METRIC);
+
+    appsettings->setCValue(context->athlete->cyclist, GC_WEIGHT, weight->value() * (metricUnits ? 1.0 : KG_PER_LB));
+    appsettings->setCValue(context->athlete->cyclist, GC_HEIGHT, height->value() * (metricUnits ? 1.0/100.0 : CM_PER_INCH/100.0));
     appsettings->setCValue(context->athlete->cyclist, GC_WBALTAU, wbaltau->value());
 
 
@@ -2328,6 +2332,7 @@ IntervalMetricsPage::IntervalMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         availList->addItem(item);
     }
     foreach (QString symbol, selectedMetrics) {
@@ -2336,6 +2341,7 @@ IntervalMetricsPage::IntervalMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         selectedList->addItem(item);
     }
 
@@ -2523,6 +2529,7 @@ BestsMetricsPage::BestsMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         availList->addItem(item);
     }
     foreach (QString symbol, selectedMetrics) {
@@ -2531,6 +2538,7 @@ BestsMetricsPage::BestsMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         selectedList->addItem(item);
     }
 
@@ -2691,7 +2699,9 @@ CustomMetricsPage::refreshTable()
 
         QTreeWidgetItem *add = new QTreeWidgetItem(table->invisibleRootItem());
         add->setText(0, m.symbol);
+        add->setToolTip(0, m.description);
         add->setText(1, m.name);
+        add->setToolTip(1, m.description);
     }
 }
 
@@ -2897,6 +2907,7 @@ SummaryMetricsPage::SummaryMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         availList->addItem(item);
     }
     foreach (QString symbol, selectedMetrics) {
@@ -2905,6 +2916,7 @@ SummaryMetricsPage::SummaryMetricsPage(QWidget *parent) :
         QSharedPointer<RideMetric> m(factory.newMetric(symbol));
         QListWidgetItem *item = new QListWidgetItem(Utils::unprotect(m->name()));
         item->setData(Qt::UserRole, symbol);
+        item->setToolTip(m->description());
         selectedList->addItem(item);
     }
 

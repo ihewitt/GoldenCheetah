@@ -33,6 +33,10 @@
 #include "TimeUtils.h"
 #include "HelpWhatsThis.h"
 
+#ifdef NOWEBKIT
+#include <QtWebChannel>
+#endif
+
 // overlay helper
 #include "TabView.h"
 #include "GcOverlayWidget.h"
@@ -50,7 +54,11 @@ GoogleMapControl::GoogleMapControl(Context *context) : GcChartWindow(context), c
     layout->setContentsMargins(2,0,2,2);
     setChartLayout(layout);
 
+#ifdef NOWEBKIT
+    view = new QWebEngineView(this);
+#else
     view = new QWebView();
+#endif
     view->setPage(new myWebPage());
     view->setContentsMargins(0,0,0,0);
     view->page()->view()->setContentsMargins(0,0,0,0);
@@ -62,6 +70,21 @@ GoogleMapControl::GoogleMapControl(Context *context) : GcChartWindow(context), c
     view->setWhatsThis(help->getWhatsThisText(HelpWhatsThis::ChartRides_Map));
 
     webBridge = new WebBridge(context, this);
+#ifdef NOWEBKIT
+    // file: MyWebEngineView.cpp, MyWebEngineView extends QWebEngineView
+    QWebChannel *channel = new QWebChannel(view->page());
+
+    // set the web channel to be used by the page
+    // see http://doc.qt.io/qt-5/qwebenginepage.html#setWebChannel
+    view->page()->setWebChannel(channel);
+
+    // register QObjects to be exposed to JavaScript
+    channel->registerObject(QStringLiteral("webBridge"), webBridge);
+
+    // now you can call page()->runJavaScript(...) etc
+    // you DON'T need to call runJavaScript with qwebchannel.js, see the html file below
+
+#endif
 
     // put a helper on the screen for mouse over intervals...
     overlayIntervals = new IntervalSummaryWindow(context);
@@ -71,7 +94,10 @@ GoogleMapControl::GoogleMapControl(Context *context) : GcChartWindow(context), c
     // connects
     //
     connect(this, SIGNAL(rideItemChanged(RideItem*)), this, SLOT(rideSelected()));
+#ifndef NOWEBKIT
     connect(view->page()->mainFrame(), SIGNAL(javaScriptWindowObjectCleared()), this, SLOT(updateFrame()));
+#endif
+
     connect(context, SIGNAL(rideChanged(RideItem*)), this, SLOT(forceReplot()));
     connect(context, SIGNAL(intervalsChanged()), webBridge, SLOT(intervalsChanged()));
     connect(context, SIGNAL(intervalSelected()), webBridge, SLOT(intervalsChanged()));
@@ -141,7 +167,12 @@ GoogleMapControl::rideSelected()
 void GoogleMapControl::loadRide()
 {
     createHtml();
+
+#ifdef NOWEBKIT
+    view->page()->setHtml(currentPage);
+#else
     view->page()->mainFrame()->setHtml(currentPage);
+#endif
 }
 
 void GoogleMapControl::updateFrame()
@@ -153,7 +184,10 @@ void GoogleMapControl::updateFrame()
     connect(context, SIGNAL(intervalsChanged()), webBridge, SLOT(intervalsChanged()));
     connect(context, SIGNAL(intervalSelected()), webBridge, SLOT(intervalsChanged()));
 
+#ifndef NOWEBKIT
     view->page()->mainFrame()->addToJavaScriptWindowObject("webBridge", webBridge);
+#endif
+
 }
 
 void GoogleMapControl::createHtml()
@@ -198,7 +232,26 @@ void GoogleMapControl::createHtml()
     "   body { height: 100%; margin: 0; padding: 0 }\n"
     "   #map-canvas { height: 100% }\n"
     "</style>\n"
-    "<script type=\"text/javascript\" src=\"http://maps.googleapis.com/maps/api/js?key=AIzaSyASrk4JoJOzESQguDwjk8aq9nQXsrUUskM&sensor=false\"></script> \n");
+    "<script type=\"text/javascript\" src=\"http://maps.googleapis.com/maps/api/js?key=AIzaSyASrk4JoJOzESQguDwjk8aq9nQXsrUUskM\"></script> \n");
+
+#ifdef NOWEBKIT
+    currentPage += QString("<script type=\"text/javascript\" src=\"qrc:///qtwebchannel/qwebchannel.js\"></script>\n");
+#endif
+
+    currentPage += QString("<script type=\"text/javascript\"> \n"
+    "var webBridge; \n"
+    "document.addEventListener(\"DOMContentLoaded\", function () { \n"
+#ifdef NOWEBKIT
+    "<!-- it's a good idea to initialize webchannel after DOM ready, if the code is going to manipulate the DOM -->\n"
+    "   new QWebChannel(qt.webChannelTransport, function (channel) { \n"
+    "       webBridge = channel.objects.webBridge; \n"
+    "       initialize(); \n"
+    "   }); \n"
+#else
+    "   initialize(); \n"
+#endif
+    "}); \n"
+    "</script>");
 
     // fg/bg
     currentPage += QString("<STYLE>BODY { background-color: %1; color: %2 }</STYLE>")
@@ -217,6 +270,17 @@ void GoogleMapControl::createHtml()
     // b) allow local manipulation. This makes the UI
     // considerably more 'snappy'
     "function drawRoute() {\n"
+#ifdef NOWEBKIT
+    // load the GPS co-ordinates
+    "   webBridge.getLatLons(0, drawRouteForLatLons);\n"
+#else
+    // load the GPS co-ordinates
+    "    var latlons = webBridge.getLatLons(0);\n" // interval "0" is the entire route
+    "   drawRouteForLatLons(latlons);\n"
+#endif
+    "}\n"
+    "\n"
+    "function drawRouteForLatLons(latlons) {\n"
 
     // route will be drawn with these options
     "    var routeOptionsYellow = {\n"
@@ -225,9 +289,6 @@ void GoogleMapControl::createHtml()
     "        strokeWeight: 10,\n"
     "        zIndex: -2\n"
     "    };\n"
-
-    // load the GPS co-ordinates
-    "    var latlons = webBridge.getLatLons(0);\n" // interval "0" is the entire route
 
     // create the route Polyline
     "    var routeYellow = new google.maps.Polyline(routeOptionsYellow);\n"
@@ -248,39 +309,51 @@ void GoogleMapControl::createHtml()
     "}\n"
 
 
-
     "function drawIntervals() { \n"
-    // intervals will be drawn with these options
-    "    var polyOptions = {\n"
-    "        strokeColor: '#0000FF',\n"
-    "        strokeOpacity: 0.6,\n"
-    "        strokeWeight: 10,\n"
-    "        zIndex: -1\n"  // put at the bottom
-    "    }\n"
+    // how many to draw?
+#ifdef NOWEBKIT
+    "   webBridge.intervalCount(drawIntervalsCount);\n"
+#else
+    "   drawIntervalsCount(webBridge.intervalCount());\n"
+#endif
+    "}\n"
 
+    "function drawIntervalsCount(intervals) { \n"
     // remove previous intervals highlighted
-    "    j= intervalList.length;\n"
+    "   j= intervalList.length;\n"
     "    while (j) {\n"
     "       var highlighted = intervalList.pop();\n"
     "       highlighted.setMap(null);\n"
     "       j--;\n"
     "    }\n"
 
-    // how many to draw?
-    "    var intervals = webBridge.intervalCount();\n"
-    "    while (intervals > 0) {\n"
-    "        var latlons = webBridge.getLatLons(intervals);\n"
-    "        var intervalHighlighter = new google.maps.Polyline(polyOptions);\n"
-    "        intervalHighlighter.setMap(map);\n"
-    "        intervalList.push(intervalHighlighter);\n"
-    "        var path = intervalHighlighter.getPath();\n"
-    "        var j=0;\n"
-    "        while (j<latlons.length) {\n"
-    "          path.push(new google.maps.LatLng(latlons[j], latlons[j+1]));\n"
-    "          j += 2;\n"
-    "        }\n"
-    "        intervals--;\n"
-    "    }\n"
+    "   while (intervals > 0) {\n"
+#ifdef NOWEBKIT
+    "       webBridge.getLatLons(intervals, drawInterval);\n"
+#else
+    "       drawInterval(webBridge.getLatLons(intervals));\n"
+#endif
+    "       intervals--;\n"
+    "   }\n"
+    "}\n"
+
+    "function drawInterval(latlons) { \n"
+    // intervals will be drawn with these options
+    "   var polyOptions = {\n"
+    "       strokeColor: '#0000FF',\n"
+    "       strokeOpacity: 0.6,\n"
+    "       strokeWeight: 10,\n"
+    "       zIndex: -1\n"  // put at the bottom
+    "   }\n"
+    "   var intervalHighlighter = new google.maps.Polyline(polyOptions);\n"
+    "   intervalHighlighter.setMap(map);\n"
+    "   intervalList.push(intervalHighlighter);\n"
+    "   var path = intervalHighlighter.getPath();\n"
+    "   var j=0;\n"
+    "   while (j<latlons.length) {\n"
+    "       path.push(new google.maps.LatLng(latlons[j], latlons[j+1]));\n"
+    "       j += 2;\n"
+    "   }\n"
     "}\n"
 
     // initialise function called when map loaded
@@ -342,7 +415,8 @@ void GoogleMapControl::createHtml()
 
     // the main page is rather trivial
     currentPage += QString("</head>\n"
-    "<body onload=\"initialize()\">\n"
+
+    "<body>\n"
     "<div id=\"map-canvas\"></div>\n"
     "</body>\n"
     "</html>\n");
@@ -408,7 +482,12 @@ GoogleMapControl::drawShadedRoute()
                             "polyline.setOptions(polyOptions);\n"
                             "}\n").arg(color.name());
 
+        #ifdef NOWEBKIT
+            view->page()->runJavaScript(code);
+        #else
             view->page()->mainFrame()->evaluateJavaScript(code);
+        #endif
+
         }
     }
 
@@ -420,7 +499,11 @@ GoogleMapControl::clearTempInterval() {
                             "    tmpIntervalHighlighter.getPath().clear();\n"
                             "}\n" );
 
+#ifdef NOWEBKIT
+    view->page()->runJavaScript(code);
+#else
     view->page()->mainFrame()->evaluateJavaScript(code);
+#endif
 }
 
 void
@@ -458,7 +541,11 @@ GoogleMapControl::drawTempInterval(IntervalItem *current) {
 
     code += QString("}\n" );
 
+#ifdef NOWEBKIT
+    view->page()->runJavaScript(code);
+#else
     view->page()->mainFrame()->evaluateJavaScript(code);
+#endif
 
     overlayIntervals->intervalSelected();
 }
@@ -508,20 +595,37 @@ GoogleMapControl::createMarkers()
                    "var image = new google.maps.MarkerImage('qrc:images/maps/loop.png');"
                    "var marker = new google.maps.Marker({ icon: image, animation: google.maps.Animation.DROP, position: latlng });"
                    "marker.setMap(map); }").arg(points[0]->lat,0,'g',GPS_COORD_TO_STRING).arg(points[0]->lon,0,'g',GPS_COORD_TO_STRING);
+
+    #ifdef NOWEBKIT
+        view->page()->runJavaScript(code);
+    #else
         view->page()->mainFrame()->evaluateJavaScript(code);
+    #endif
     } else {
         // start / finish markers
         code = QString("{ var latlng = new google.maps.LatLng(%1,%2);"
                    "var image = new google.maps.MarkerImage('qrc:images/maps/cycling.png');"
                    "var marker = new google.maps.Marker({ icon: image, animation: google.maps.Animation.DROP, position: latlng });"
                    "marker.setMap(map); }").arg(points[0]->lat,0,'g',GPS_COORD_TO_STRING).arg(points[0]->lon,0,'g',GPS_COORD_TO_STRING);
+
+    #ifdef NOWEBKIT
+        view->page()->runJavaScript(code);
+    #else
         view->page()->mainFrame()->evaluateJavaScript(code);
+    #endif
+
 
         code = QString("{ var latlng = new google.maps.LatLng(%1,%2);"
                    "var image = new google.maps.MarkerImage('qrc:images/maps/finish.png');"
                    "var marker = new google.maps.Marker({ icon: image, animation: google.maps.Animation.DROP, position: latlng });"
                    "marker.setMap(map); }").arg(points[points.count()-1]->lat,0,'g',GPS_COORD_TO_STRING).arg(points[points.count()-1]->lon,0,'g',GPS_COORD_TO_STRING);
+
+
+    #ifdef NOWEBKIT
+        view->page()->runJavaScript(code);
+    #else
         view->page()->mainFrame()->evaluateJavaScript(code);
+    #endif
     }
 
     //
@@ -567,7 +671,13 @@ GoogleMapControl::createMarkers()
                     "var marker = new google.maps.Marker({ icon: image, animation: google.maps.Animation.DROP, position: latlng });"
                     "marker.setMap(map);"
                 "}").arg(rfp->lat,0,'g',GPS_COORD_TO_STRING).arg(rfp->lon,0,'g',GPS_COORD_TO_STRING);
+
+            #ifdef NOWEBKIT
+                view->page()->runJavaScript(code);
+            #else
                 view->page()->mainFrame()->evaluateJavaScript(code);
+            #endif
+
                 stoptime=0;
             }
             stoplat=stoplon=stoptime=0;
@@ -598,7 +708,13 @@ GoogleMapControl::createMarkers()
                                     .arg(x->name)
                                     .arg(interval)
                                     ;
+
+    #ifdef NOWEBKIT
+        view->page()->runJavaScript(code);
+    #else
         view->page()->mainFrame()->evaluateJavaScript(code);
+    #endif
+
         interval++;
     }
 
@@ -644,7 +760,11 @@ void GoogleMapControl::zoomInterval(IntervalItem *which)
                     .arg(minLon,0,'g',GPS_COORD_TO_STRING)
                     .arg(maxLat,0,'g',GPS_COORD_TO_STRING)
                     .arg(maxLon,0,'g',GPS_COORD_TO_STRING);
+#ifdef NOWEBKIT
+    view->page()->runJavaScript(code);
+#else
     view->page()->mainFrame()->evaluateJavaScript(code);
+#endif
 }
 
 // quick diag, used to debug code only

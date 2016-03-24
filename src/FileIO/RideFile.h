@@ -100,7 +100,8 @@ class RideFileInterval
                             PEAKPACE,               // Peak Pace
                             EFFORT,                 // Sustained effort
                             ROUTE,                  // GPS Route
-                            CLIMB,                  // Hills and Cols
+                            CLIMB                   // Hills and Cols
+
                                                     // ADD NEW ONES HERE AND UPDATE last() below
 
                            } types;
@@ -299,6 +300,7 @@ class RideFile : public QObject // QObject to emit signals
         // Working with REFERENCES
         void appendReference(const RideFilePoint &);
         void removeReference(int index);
+        void removeExhaustion(int index);
         const QVector<RideFilePoint*> &referencePoints() const { return referencePoints_; }
 
         // Index offset calculations

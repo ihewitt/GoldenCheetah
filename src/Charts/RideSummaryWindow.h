@@ -23,18 +23,24 @@
 #include "Context.h"
 
 #include <QWidget>
+
+#ifdef NOWEBKIT
+#include <QWebEngineView>
+#include <QWebEngineSettings>
+#else
 #include <QWebView>
 #include <QWebFrame>
+#endif
+
 #include <QFormLayout>
 #if QT_VERSION >= 0x050000
 #include <QtConcurrent>
 #endif
 
+#include <QPointer>
 #include "RideFileCache.h"
 #include "ExtendedCriticalPower.h"
-
 #include "SearchFilterBox.h"
-
 #include "Specification.h"
 
 class RideSummaryWindow : public GcChartWindow
@@ -91,6 +97,7 @@ class RideSummaryWindow : public GcChartWindow
         void dateRangeChanged(DateRange);
         void rideItemChanged();
         void metadataChanged();
+        void intervalsChanged();
 
         // date settings
         void useCustomRange(DateRange);
@@ -119,9 +126,15 @@ class RideSummaryWindow : public GcChartWindow
         QString htmlCompareSummary() const; // comparing intervals or seasons
 
         Context *context;
+#ifdef NOWEBKIT
+        QWebEngineView *rideSummary;
+#else
         QWebView *rideSummary;
+#endif
 
         RideItem *_connected;
+        bool justloaded;
+        bool firstload;
         bool ridesummary; // do we summarise ride or daterange?
 
         Specification specification;
