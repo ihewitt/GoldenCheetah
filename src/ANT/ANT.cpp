@@ -238,7 +238,7 @@ void ANT::setHb(double smo2, double thb)
 
 void ANT::setCoreTemp(double core, double skin)
 {
-    telemetry.setTemp(core, skin);
+    telemetry.setCoreTemp(core, skin);
 }
 
 /*======================================================================
