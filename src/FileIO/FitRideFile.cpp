@@ -3274,7 +3274,7 @@ genericnext:
                      leftPedalCenterOffset, rightPedalCenterOffset,
                      leftTopDeathCenter, rightTopDeathCenter, leftBottomDeathCenter, rightBottomDeathCenter,
                      leftTopPeakPowerPhase, rightTopPeakPowerPhase, leftBottomPeakPowerPhase, rightBottomPeakPowerPhase,
-            smO2, tHb, rvert, rcad, rcontact, tcore, interval, false);
+                     smO2, tHb, rvert, rcad, rcontact, tcore, interval, false);
 
         last_time = time;
         last_distance = km;
@@ -3472,7 +3472,7 @@ genericnext:
                           break;
                 case 1:	  // time256
                           break;
-                case 6:   // filtered_bpm
+                case 6:	  // filtered_bpm
                           if (value.type == SingleValue) {
                             hr.append(value.v);
                           }
@@ -4773,16 +4773,7 @@ RideFile *FitFileReader::openRideFile(QFile &file, QStringList &errors, QList<Ri
 //              when sharing data with the cloud or other applications
 //
 
-// Zero pad string to length of field (len)
-void write_string(QByteArray* array, const char* str, int len)
-{
-    int slen = strlen(str);
-    array->append(str, slen);
-    array->append(len - slen, 0);
-}
-
-void write_int8(QByteArray* array, fit_value_t value)
-{
+void write_int8(QByteArray* array, fit_value_t value) {
     array->append(value);
 }
 
@@ -4808,8 +4799,7 @@ void write_int32(QByteArray *array, fit_value_t value,  bool is_big_endian) {
     }
 }
 
-void write_float32(QByteArray* array, float f, bool is_big_endian)
-{
+void write_float32(QByteArray* array, float f, bool is_big_endian) {
     if (is_big_endian) {
         f = qbswap(f);
     }
@@ -4818,6 +4808,13 @@ void write_float32(QByteArray* array, float f, bool is_big_endian)
     for (int i = 0; i < 32; i = i + 8) {
         array->append((*p) >> i);
     }
+}
+
+// Zero pad string to length of field (len)
+void write_string(QByteArray* array, const char* str, int len) {
+    int slen = strlen(str);
+    array->append(str, slen);
+    array->append(len - slen, 0);
 }
 
 uint16_t crc16(char *buf, int len)
@@ -4841,8 +4838,7 @@ uint16_t crc16(char *buf, int len)
 }
 
 // TODO check protocol version
-void write_header(QByteArray* array, quint32 data_size)
-{
+void write_header(QByteArray* array, quint32 data_size) {
     quint8 header_size = 14;
     quint8 protocol_version = 16; // 20;
     quint16 profile_version = 1320; // 2173; // always littleEndian
@@ -4873,9 +4869,9 @@ void write_field_definition(QByteArray *array, int field_num, int field_size, in
 }
 
 void write_file_id(QByteArray *array, const RideFile *ride) {
-    // 0        type
-    // 1        manufacturer
-    // 2        product/garmin_product
+    // 0	type
+    // 1	manufacturer
+    // 2	product/garmin_product
     // 3	serial_number
     // 4	time_created
     // 5	number
@@ -4922,8 +4918,8 @@ void write_file_id(QByteArray *array, const RideFile *ride) {
 }
 
 void write_file_creator(QByteArray *array) {
-    // 0        software_version        uint16
-    // 1        hardware_version        uint8
+    // 0	software_version	uint16
+    // 1	hardware_version	uint8
 
     write_message_definition(array, FILE_CREATOR_MSG_NUM, 0, 2); // global_msg_num, local_msg_type, num_fields
 
@@ -4945,9 +4941,10 @@ void write_file_creator(QByteArray *array) {
 
 }
 
-void write_session(QByteArray* array, const RideFile* ride, QHash<QString, RideMetricPtr> computed)
-{
+void write_session(QByteArray* array, const RideFile* ride, QHash<QString, RideMetricPtr> computed) {
     QByteArray* fields = new QByteArray();
+
+    write_message_definition(array, FIELD_DESCRIPTION, 0, 7);
 
     write_field_definition(fields, 3, 64, 0x07); //'core_temperature'
     write_field_definition(fields, 8, 16, 0x07); //'°C'
@@ -4957,7 +4954,6 @@ void write_session(QByteArray* array, const RideFile* ride, QHash<QString, RideM
     write_field_definition(fields, 15, 1, 0x02); // unit8 - (native#) 139
     write_field_definition(fields, 0, 1, 0x02); // developer id
 
-    write_message_definition(array, FIELD_DESCRIPTION, 0, 7);
     array->append(fields->data(), fields->size());
     write_int8(array, 0);
     write_string(array, "CIQ_device_info", 64);
@@ -5295,8 +5291,7 @@ void write_dev_fields(QByteArray* array, const RideFile* ride, int local_msg_typ
     }
 }
 
-void write_record_definition(QByteArray* array, const RideFile* ride, QMap<int, int>* local_msg_type_for_record_type, bool withAlt, bool withWatts, bool withHr, bool withCad, int type)
-{
+void write_record_definition(QByteArray *array, const RideFile *ride, QMap<int, int> *local_msg_type_for_record_type, bool withAlt, bool withWatts, bool withHr, bool withCad, int type) {
     int num_fields = 1;
     QByteArray *fields = new QByteArray();
 
