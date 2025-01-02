@@ -388,7 +388,7 @@ TrainSidebar::TrainSidebar(Context *context) : GcWindow(context), context(contex
     lap_elapsed_msec = 0;
     secs_to_start = 0;
 
-    rrFile = posFile = recordFile = vo2File = NULL;
+    rrFile = posFile = recordFile = vo2File = tcoreFile = NULL;
     lastRecordSecs = 0;
     status = 0;
     setStatusFlags(RT_MODE_ERGO);         // ergo mode by default
@@ -412,6 +412,7 @@ TrainSidebar::TrainSidebar(Context *context) : GcWindow(context), context(contex
     displayPosition = RealtimeData::seated;
     displayRppb = displayRppe = displayRpppb = displayRpppe = 0.0;
     displayLppb = displayLppe = displayLpppb = displayLpppe = 0.0;
+    displayCoreTemp = 0.0;
 
     connect(gui_timer, SIGNAL(timeout()), this, SLOT(guiUpdate()));
     connect(disk_timer, SIGNAL(timeout()), this, SLOT(diskUpdate()));
@@ -771,6 +772,7 @@ TrainSidebar::configChanged(qint32 why)
             // connect slot for receiving rrData
             connect(Devices[i].controller, SIGNAL(rrData(uint16_t,uint8_t,uint8_t)), this, SLOT(rrData(uint16_t,uint8_t,uint8_t)));
             connect(Devices[i].controller, SIGNAL(posData(uint8_t)), this, SLOT(posData(uint8_t)));
+            connect(Devices[i].controller, SIGNAL(tcoreData(float,float,int)), this, SLOT(tcoreData(float,float,int)));
 #ifdef QT_BLUETOOTH_LIB
         } else if (Devices.at(i).type == DEV_BT40) {
             Devices[i].controller = new BT40Controller(this, &Devices[i]);
@@ -1483,7 +1485,7 @@ void TrainSidebar::Start()       // when start button is pressed
                 // CSV File header
 
                 QTextStream recordFileStream(recordFile);
-                recordFileStream << "secs, cad, hr, km, kph, nm, watts, alt, lon, lat, headwind, slope, temp, interval, lrbalance, lte, rte, lps, rps, smo2, thb, o2hb, hhb, target, rppb, rppe, rpppb, rpppe, lppb, lppe, lpppb, lpppe\n";
+                recordFileStream << "secs, cad, hr, km, kph, nm, watts, alt, lon, lat, headwind, slope, temp, interval, lrbalance, lte, rte, lps, rps, smo2, thb, o2hb, hhb, tcore, target, rppb, rppe, rpppb, rpppe, lppb, lppe, lpppb, lpppe\n";
 
                 disk_timer->start(SAMPLERATE);  // start screen
             }
@@ -1626,6 +1628,14 @@ void TrainSidebar::Stop(int deviceStatus)        // when stop button is pressed
         rrMutex.unlock();
         vo2Mutex.unlock();
 
+        // close tcoreFile
+        if (tcoreFile) {
+            fprintf(stderr, "Closing tcore file\n"); fflush(stderr);
+            tcoreFile->close();
+            delete tcoreFile;
+            tcoreFile=NULL;
+        }
+
         if(deviceStatus == DEVICE_ERROR)
         {
             recordFile->remove();
@@ -1724,6 +1734,7 @@ void TrainSidebar::updateData(RealtimeData &rtData)
     displayLpppb = rtData.getLpppb();
     displayLpppe = rtData.getLpppe();
     displayPosition = rtData.getPosition();
+    displayCoreTemp = rtData.getCoreTemp();
     // Gradient not supported
     return;
 }
@@ -1924,6 +1935,7 @@ void TrainSidebar::guiUpdate()           // refreshes the telemetry
                     rtData.setFeO2(local.getFeO2());
                 }
 
+                rtData.setTemp(local.getCoreTemp(),0);
                 // what are we getting from this one?
                 if (dev == bpmTelemetry) rtData.setHr(local.getHr());
                 if (dev == rpmTelemetry) rtData.setCadence(local.getCadence());
@@ -2163,6 +2175,7 @@ void TrainSidebar::guiUpdate()           // refreshes the telemetry
             displayLpppb = rtData.getLpppb();
             displayLpppe = rtData.getLpppe();
             displayPosition = rtData.getPosition();
+            displayCoreTemp = rtData.getCoreTemp();
 
             double weightKG = bicycle.MassKG();
             double vs = computeInstantSpeed(weightKG, rtData.getSlope(), rtData.getAltitude(), rtData.getWatts());
@@ -2283,7 +2296,7 @@ void TrainSidebar::diskUpdate()
     if (secs <= lastRecordSecs) return; // Avoid duplicates
     lastRecordSecs = secs;
 
-    // GoldenCheetah CVS Format "secs, cad, hr, km, kph, nm, watts, alt, lon, lat, headwind, slope, temp, interval, lrbalance, lte, rte, lps, rps, smo2, thb, o2hb, hhb, target, rppb, rppe, rpppb, rpppe, lppb, lppe, lpppb, lpppe\n";
+    // GoldenCheetah CVS Format "secs, cad, hr, km, kph, nm, watts, alt, lon, lat, headwind, slope, temp, interval, lrbalance, lte, rte, lps, rps, smo2, thb, o2hb, hhb, tcore, target, rppb, rppe, rpppb, rpppe, lppb, lppe, lpppb, lpppe\n";
 
     recordFileStream    << secs
                         << "," << displayCadence
@@ -2320,6 +2333,7 @@ void TrainSidebar::diskUpdate()
                         << "," << displayTHB
                         << "," << displayO2HB
                         << "," << displayHHB
+                        << "," << displayCoreTemp
                         << "," << loadStr
                         << "," << displayRppb
                         << "," << displayRppe
@@ -3377,6 +3391,37 @@ void TrainSidebar::posData(uint8_t position)
         recordFileStream << secs << "," << position << "\n";
     }
     //fprintf(stderr, "position: %d ms, position=%d\n", posTime, position); fflush(stderr);
+}
+
+// Coretemp data received
+void TrainSidebar::tcoreData(float  core, float skin, int qual)
+{
+    if (status&RT_RECORDING && tcoreFile == NULL && recordFile != NULL) {
+        QString tcorefile = recordFile->fileName().replace("csv", "tcr");
+
+        // setup the rr file
+        tcoreFile = new QFile(tcorefile);
+        if (!tcoreFile->open(QFile::WriteOnly | QFile::Truncate)) {
+            delete tcoreFile;
+            tcoreFile=NULL;
+        } else {
+
+            // CSV File header
+            QTextStream recordFileStream(rrFile);
+            recordFileStream << "secs, core, skin, qual\n";
+        }
+    }
+
+    // output a line if recording and file ready
+    if (status&RT_RECORDING && tcoreFile) {
+        QTextStream recordFileStream(tcoreFile);
+
+        // convert from milliseconds to secondes
+        double secs = double(session_elapsed_msec + session_time.elapsed()) / 1000.00;
+
+        // output a line
+        recordFileStream << secs << ", " << core << ", " << skin << ", " << qual << "\n";
+    }
 }
 
 // VO2 Measurement data received
