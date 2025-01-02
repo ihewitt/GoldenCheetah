@@ -1540,8 +1540,9 @@ struct FitFileParser
             case 108: // RESPIRATIONRATE
             case 116: // Stress
                 return 100.0;
-            // case 139: //CORET£MP
-            //                 return 0.01;
+
+            // case 139: //CORETEMP //do we need to scale here?
+            //     return 0.01;
 
             default:
                 return 1.0;
