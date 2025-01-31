@@ -80,7 +80,8 @@
 #include "TrainDB.h"
 #include "Library.h"
 
-#if defined(GC_HAVE_VLC)||defined(GC_VIDEO_QT6) // RLV currently only support for VLC
+ // RLV currently only support for VLC/QT6
+#if defined(GC_HAVE_VLC)||defined(GC_VIDEO_QT5)||defined(GC_VIDEO_QT6)
 #define USE_RLV
 #endif
 

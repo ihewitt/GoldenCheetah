@@ -113,6 +113,9 @@ extern "C" {
 #ifdef GC_VIDEO_QT5
 #include <QMediaContent>
 #endif
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsVideoItem>
 
 // QT stuff etc
 #include <QtGui>
@@ -312,15 +315,18 @@ class VideoWindow : public GcChartWindow
         mutable OrderedAsync vlcDispatch;
 #endif
 
-#ifdef GC_VIDEO_QT5
-        QMediaContent mc;
-#endif
-#if defined(GC_VIDEO_QT5) || defined(GC_VIDEO_QT6)
+#if defined(GC_VIDEO_QT6)
         // QT native
         QVideoWidget *wd;
         QMediaPlayer *mp;
 #endif
-
+#if defined(GC_VIDEO_QT5)
+        QMediaContent mc;
+        QMediaPlayer *mp;
+        QGraphicsView *view;
+        QGraphicsScene *scene;
+        QGraphicsVideoItem *item;
+#endif
         QWidget *container;
         QComboBox *layoutSelector;
         QPushButton *resetLayoutBtn;

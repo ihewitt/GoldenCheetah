@@ -111,7 +111,24 @@ VideoWindow::VideoWindow(Context *context)  :
     }
 #endif
 
-#if defined(GC_VIDEO_QT5)||defined(GC_VIDEO_QT6)
+#if defined(GC_VIDEO_QT5)
+    view = new QGraphicsView(this);
+    scene = new QGraphicsScene(view);
+    item = new QGraphicsVideoItem();
+
+    view->setScene(scene);
+    scene->addItem(item);
+
+    mp = new QMediaPlayer(this,QMediaPlayer::VideoSurface);
+    mp->setVideoOutput(item);
+    view->show();
+    item->setSize(QSizeF(this->width(),this->height()));
+
+    container=view->viewport();
+    layout->addWidget(view);
+#endif
+
+#if defined(GC_VIDEO_QT6)
     // USE QT VIDEO PLAYER
     wd = new QVideoWidget(this);
     wd->show();
@@ -119,9 +136,7 @@ VideoWindow::VideoWindow(Context *context)  :
     mp = new QMediaPlayer(this);
     mp->setVideoOutput(wd);
 
-#if defined(GC_VIDEO_QT6)
     mp->setAudioOutput(new QAudioOutput);
-#endif
     container = wd;
     layout->addWidget(container);
 #endif
@@ -209,8 +224,14 @@ VideoWindow::~VideoWindow()
     delete container;
 #endif
 
-#if defined(GC_VIDEO_QT5)||defined(GC_VIDEO_QT6)
-    // QT MEDIA
+// QT MEDIA
+#if defined(GC_VIDEO_QT5)
+    delete mp;
+    delete item;
+    delete scene;
+    delete view;
+#endif
+#if defined(GC_VIDEO_QT6)
     delete mp;
     delete wd;
 #endif
@@ -298,7 +319,7 @@ void VideoWindow::readVideoLayout(int pos, bool useDefault)
 void VideoWindow::showMeters()
 {
     foreach(MeterWidget* p_meterWidget , m_metersWidget)
-    {
+    {      
         p_meterWidget->setWindowOpacity(1); // Show the widget
         p_meterWidget->AdjustSizePos();
         p_meterWidget->update();
@@ -315,6 +336,9 @@ void VideoWindow::resizeEvent(QResizeEvent * )
     if (!hasActiveVideo())
         return;
 
+#ifdef GC_VIDEO_QT5
+    item->setSize(QSizeF(container->width(),container->height()));
+#endif
     foreach(MeterWidget* p_meterWidget , m_metersWidget)
         p_meterWidget->AdjustSizePos();
     prevPosition = mapToGlobal(pos());
@@ -357,16 +381,18 @@ void VideoWindow::startPlayback()
     m_MediaChanged = false;
 #endif
 
-#ifdef GC_VIDEO_QT5
-#ifdef GC_VIDEO_QT6
+#if defined(GC_VIDEO_QT5)||defined(GC_VIDEO_QT6)
     // open the media object
     float rate = 1.0f;
     if (context->currentVideoSyncFile() && context->currentVideoSyncFile()->Points.count() > 1)
-        rate = 0.1f;
+        rate = 0.0f; //why start with .1 and not 0?
+    //qDebug()<<"first rate "<<rate;
     mp->setPlaybackRate(rate);
-#endif
     mp->play();
 #endif
+// #ifdef GC_VIDEO_QT5
+//     mp->play();
+// #endif
 
     // Compute VideoSync unit correction factors.
     videoSyncTimeAdjustFactor = 1.;
@@ -440,6 +466,9 @@ void VideoWindow::startPlayback()
                     double mediaDuration = (double)mp->duration();
                     if (mediaDuration > 0) {
                         videoSyncTimeAdjustFactor = mediaDuration / videoSyncDuration;
+                        //qDebug() << "media d: " << mediaDuration << "vs d: "<<videoSyncDuration;
+                        //qDebug() << "vs frameRate: " << videoSyncFrameRate;
+                        //qDebug() << "videoSyncTimeAdjustFactor: "<<videoSyncTimeAdjustFactor;
                     }
                 }
             }
@@ -738,7 +767,7 @@ void VideoWindow::telemetryUpdate(RealtimeData rtd)
     Q_UNUSED(rtd)
 #endif
 
-#if defined (GC_VIDEO_VLC) || defined (GC_VIDEO_QT6)
+#if defined (GC_VIDEO_VLC) || defined(GC_VIDEO_QT5) || defined (GC_VIDEO_QT6)
     if (PlaybackState::Playing != state)
         return;
 
@@ -839,7 +868,10 @@ void VideoWindow::telemetryUpdate(RealtimeData rtd)
         if (rate < 0.01)
             mp->pause();
         else 
-            mp->play();
+        {
+            if (mp->state()!=QMediaPlayer::State::PlayingState)
+                mp->play();
+        }
 #endif
         // change video rate but only if there is a significant change
         if ((rate != 0.0) && (fabs((rate - currentVideoRate) / rate) > 0.05))
@@ -847,7 +879,7 @@ void VideoWindow::telemetryUpdate(RealtimeData rtd)
 #ifdef GC_VIDEO_VLC
             vlcDispatch.AsyncCall([capture_mp, rate]{ libvlc_media_player_set_rate(capture_mp, rate); });
 #else
-            mp->setPlaybackRate(rate);
+mp->setPlaybackRate(rate);
 #endif
             currentVideoRate = rate;
         }

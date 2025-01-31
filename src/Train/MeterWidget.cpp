@@ -124,7 +124,6 @@ void MeterWidget::stopPlayback()
 
 }
 
-
 void MeterWidget::paintEvent(QPaintEvent* paintevent)
 {
     Q_UNUSED(paintevent);
