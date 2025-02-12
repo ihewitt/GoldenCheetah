@@ -3,9 +3,7 @@ set -ev
 
 # Install qt5.15
 sudo apt-get update -qq
-sudo apt-get install -qq qtbase5-dev qt5-qmake qtbase5-dev-tools qttools5-dev qttranslations5-l10n
-sudo apt-get install -qq qtmultimedia5-dev qtconnectivity5-dev qtwebengine5-dev qtpositioning5-dev
-sudo apt-get install -qq libqt5charts5-dev libqt5serialport5-dev libqt5webchannel5-dev libqt5svg5-dev libqt5opengl5-dev
+sudo apt-get install -qq qtbase5-dev qtbase5-dev-tools qttools5-dev libqt5svg5-dev libqt5opengl5-dev
 qmake --version
 
 sudo apt-get install -qq libglu1-mesa-dev
@@ -28,14 +26,15 @@ if [ -z "$(ls -A D2XX)" ]; then
     tar xf libftd2xx-x86_64-1.4.27.tgz -C D2XX
 fi
 
-# SRMIO
-git clone https://github.com/rclasen/srmio.git
-cd srmio
-sh genautomake.sh
-./configure --disable-shared --enable-static
-make --silent -j3
-sudo make install
-cd ${TRAVIS_BUILD_DIR}
+# SRMIO (disabled due to build errors)
+#wget --no-verbose https://github.com/rclasen/srmio/archive/v0.1.1git1.tar.gz
+#tar xf v0.1.1git1.tar.gz
+#cd srmio-0.1.1git1
+#sh genautomake.sh
+#./configure --disable-shared --enable-static
+#make --silent -j3
+#sudo make install
+#cd ${TRAVIS_BUILD_DIR}
 
 # LIBUSB
 sudo apt-get install -qq libusb-1.0-0-dev libudev-dev
